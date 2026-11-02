@@ -8,6 +8,28 @@
 
 ## เริ่มใช้
 
+ติดตั้งสำหรับ Codex ทุกโปรเจกต์ด้วยคำสั่งมาตรฐานได้เลย:
+
+```bash
+npx skills add subin-sama/dynamic-model-router -g -a codex -y
+```
+
+ตัวติดตั้ง `skills` รุ่นปัจจุบันต้องใช้ Node.js 22.20 ขึ้นไป หากต้องการเลือก agent เอง ใช้ `npx skills add subin-sama/dynamic-model-router -g` หากติดตั้งเฉพาะโปรเจกต์ ให้ตัด `-g` ออก สำหรับ Codex ตัวติดตั้งมาตรฐานจะใช้ `~/.agents/skills/dynamic-model-router` แล้วเปิดหรือโหลดรายการสกิลใหม่ในแอป
+
+อัปเดตภายหลังได้ด้วย `npx skills update dynamic-model-router -g -y` ถ้าติดตั้งแบบ manual ไว้แล้ว ให้เก็บไว้เพียงหนึ่งตำแหน่งที่โฮสต์ค้นพบ
+
+หากต้องการให้ Codex ติดตั้งและเปิดใช้ทุกงานในคำขอเดียว ให้วางข้อความนี้ในแชต Codex:
+
+```text
+Use $skill-installer to install https://github.com/subin-sama/dynamic-model-router
+and enable dynamic-model-router for every task in my global AGENTS.md.
+Preserve all existing instructions.
+```
+
+คำสั่ง `skills add` ติดตั้งไฟล์สกิล ส่วนข้อความข้างต้นขอให้ Codex เพิ่มคำสั่งเปิดใช้ทุกงานใน `AGENTS.md` ด้วย โดยเก็บคำสั่งเดิมไว้
+
+### ทางเลือก: ติดตั้งด้วยไฟล์หรือ clone
+
 แตก ZIP แล้ววางโฟลเดอร์ `dynamic-model-router` ทั้งโฟลเดอร์ในตำแหน่งของแพลตฟอร์ม เปิดหรือโหลดรายการสกิลใหม่หากแอปยังไม่แสดงสกิล
 
 | แพลตฟอร์ม | ติดตั้งส่วนตัว | ติดตั้งเฉพาะโปรเจกต์ | เรียกใช้ |

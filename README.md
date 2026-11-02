@@ -17,7 +17,37 @@ Use a fast suitable pair for routine work, deepen reasoning when uncertainty and
 
 The skill does not guarantee activation on every message. A prompt saying “think harder” is not proof that the runtime reasoning setting changed. Actual setting support and permissions depend on the host, client version, and account.
 
-## Install the skill
+## Quick install
+
+Install for Codex across projects with the standard [skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add subin-sama/dynamic-model-router -g -a codex -y
+```
+
+Requires Node.js **22.20+** for the current skills CLI. To choose agents interactively, use `npx skills add subin-sama/dynamic-model-router -g`. Omit `-g` for a project-only installation. The installer discovers this repository's root `SKILL.md`; no custom npm package or manual file copying is needed. For Codex, the current standard global destination is `~/.agents/skills/dynamic-model-router`.
+
+Refresh/reopen the agent after installation. If you already installed this skill manually, keep one installation in directories your host scans.
+
+Update a standard global installation:
+
+```bash
+npx skills update dynamic-model-router -g -y
+```
+
+### Install and enable through Codex
+
+You can also paste this into Codex, using its built-in skill installer:
+
+```text
+Use $skill-installer to install https://github.com/subin-sama/dynamic-model-router
+and enable dynamic-model-router for every task in my global AGENTS.md.
+Preserve all existing instructions.
+```
+
+Standard `skills add` installs the files; it does not edit global `AGENTS.md`. The request above explicitly asks Codex to do both. The [persistent activation instructions](#activate-for-every-task) below remain available for manual setup.
+
+### Manual clone alternative
 
 Clone the repository into **one** skill directory your host discovers. The repository root contains `SKILL.md`.
 
