@@ -95,7 +95,7 @@ Enter tasks to continue one conversation; `/quit` exits. It adds one selection t
 
 The Python components have **47 offline tests**, plus real Codex worker and same-parent routing checks. The same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The global installer has additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
 
-Antigravity global activation paths are checked against official documentation. Local `agy` 1.4.3 help confirms CLI model/effort flags; automatic routing has not been tested in a live Antigravity session.
+Antigravity CLI **1.4.3 was live-tested** in one parent conversation. The parent recommended Flash/low → Opus/high → Flash/low, while all five native runtime observations remained `gemini-4-argon-medium`. Selection worked in advisory mode; automatic parent switching did not occur. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 
 From a repository clone, run offline tests without a provider account:
 

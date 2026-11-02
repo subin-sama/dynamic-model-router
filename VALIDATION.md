@@ -28,7 +28,7 @@ The npm tarball was installed through `npx --package=file:... dynamic-model-rout
 
 The distribution is English-only, including documentation, installer output, and test fixtures. The installer intentionally preserves non-English user instructions. No credentials, personal profile files, or raw runtime session identifiers are included in the npm payload.
 
-Installation support is verified for the six documented adapters. Antigravity uses the officially documented common App/CLI/IDE paths, but loading the policy in each running surface has not been live-tested. Local `agy` 1.4.3 `--help` confirms model and effort flags; no Antigravity model session or automatic parent switch was tested. Setup detects competing same-name CLI/legacy skills before writing and preserves unresolved manual copies. It configures user-wide context; it cannot force model compliance, override managed restrictions, or install a global hook into arbitrary closed AI products. Native model/effort behavior remains separately bounded below.
+Installation support is verified for the six documented adapters. Antigravity uses the officially documented common App/CLI/IDE paths, but global policy loading in each running surface has not been live-tested. The separate CLI runtime test below used workspace activation. Setup detects competing same-name CLI/legacy skills before writing and preserves unresolved manual copies. It configures user-wide context; it cannot force model compliance, override managed restrictions, or install a global hook into arbitrary closed AI products. Native model/effort behavior remains separately bounded below.
 
 ### Standard alternatives
 
@@ -65,6 +65,26 @@ All six turns completed. Native applied-setting events and each execution `turn_
 A final-build smoke test also selected Luna / low, executed with that pair, and returned its expected marker. After the main live run, narrow hardening covered incomplete metadata, models without explicit reasoning controls, omitted startup defaults, and stream-buffer cleanup. The complete offline suite passed afterward.
 
 Raw session/turn identifiers, timestamps, rollout filenames, and personal paths are kept out of the public repository. The table reports observations rather than fabricated demonstration telemetry.
+
+## Live Antigravity parent test
+
+Antigravity CLI **1.4.3** ran the unchanged skill in an isolated workspace, with an applicable `AGENTS.md` and a real account-visible model catalog. One `stream-json` process received three sequential tasks. The operator supplied no `--model` or `--effort` override and did not change settings between tasks. Workers, nested runs, and persistent configuration rewrites were excluded from this same-parent test.
+
+| Task | Parent-selected recommendation | Host-reported runtime variant |
+| --- | --- | --- |
+| Sort integers and remember a marker | `gemini-3.8-flash-low` / `low` | `gemini-4-argon-medium` |
+| Analyze concurrent claims, stale leases, and side-effect crash recovery | `claude-opus-5-5-high` / `high` | `gemini-4-argon-medium` |
+| Recall the marker and add integers | `gemini-3.8-flash-low` / `low` | `gemini-4-argon-medium` |
+
+All selected pairs appeared in the captured catalog. Each final response explicitly reported `advisory` and `recommended`, with no claim that a switch was applied. All three turns returned `SUCCESS`; the process exited 0. One initialization, matching conversation IDs, cumulative turn counts 1 → 2 → 3, and correct marker recall plus the sum establish continuity of the tested parent conversation. Completion status is not a quality benchmark for the debugging answer.
+
+A workspace-only `PreInvocation` hook recorded five invocations, all reporting `gemini-4-argon-medium` in the same conversation. The hook retained only phase, conversation ID, invocation number, and model name. Sanitized event evidence retained the exposed tool names and final responses without private reasoning text. No native same-parent model/effort switch tool appeared in the initialization inventory.
+
+Native `/effort` inspection before and after the test reported `medium`, with `low`, `medium`, and `high` available. The catalog labels the observed runtime variant Medium. The hook does not expose an independent effort or thinking-budget field; standalone effort inspection alone does not establish the setting for each earlier invocation.
+
+**Observed result: automatic model/effort selection worked as recommendations; automatic parent switching did not occur in this CLI test.** This does not establish the behavior of Antigravity App, IDE, future versions, or a separate controller that applies the parent's choices through native CLI flags. No such external controller was tested here.
+
+Sources: [headless session protocol and native flags](https://antigravity.google/docs/cli/headless/), [runtime hook contract](https://antigravity.google/docs/hooks), [native effort behavior](https://antigravity.google/docs/cli/commands/effort/).
 
 ## Independent behavioral simulation
 
