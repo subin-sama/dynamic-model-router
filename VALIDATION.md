@@ -4,13 +4,14 @@ Last checked: 2026-11-02. The repository includes a portable skill, a one-comman
 
 ## Offline tests
 
-**47 tests passed** on the development host using Python 3.9.6:
+**74 tests passed** on the development host using Python 3.9.6:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
 | Catalog inspector | 11 | Visibility, sparse native effort support, duplicate/malformed metadata, freshness, field filtering, CLI errors |
 | RPC transport | 13 | Event-before-response ordering, concurrent IDs, bounded deadlines/cleanup, safe request rejection, EOF, bounded stderr |
 | Parent client | 23 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup |
+| Antigravity parent client | 27 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, repeated-interrupt process cleanup |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -22,7 +23,7 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node installer has **49 passing real-filesystem tests**: 36 preservation/ownership/CLI/integration cases and 13 host-adapter cases. Together with the 47 Python tests, the repository has **96 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, and uninstall retaining newer user edits.
+The Node installer and launcher have **52 passing tests**: 36 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 74 Python tests, the repository has **126 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
@@ -82,9 +83,29 @@ A workspace-only `PreInvocation` hook recorded five invocations, all reporting `
 
 Native `/effort` inspection before and after the test reported `medium`, with `low`, `medium`, and `high` available. The catalog labels the observed runtime variant Medium. The hook does not expose an independent effort or thinking-budget field; standalone effort inspection alone does not establish the setting for each earlier invocation.
 
-**Observed result: automatic model/effort selection worked as recommendations; automatic parent switching did not occur in this CLI test.** This does not establish the behavior of Antigravity App, IDE, future versions, or a separate controller that applies the parent's choices through native CLI flags. No such external controller was tested here.
+**Observed result: automatic model/effort selection worked as recommendations; automatic parent switching did not occur in this skill-only CLI test.** This does not establish the behavior of Antigravity App, IDE, future versions, or a separate external controller. The later controller test is described separately below.
 
 Sources: [headless session protocol and native flags](https://antigravity.google/docs/cli/headless/), [runtime hook contract](https://antigravity.google/docs/hooks), [native effort behavior](https://antigravity.google/docs/cli/commands/effort/).
+
+## Live Antigravity external controller test
+
+The added [parent client](references/antigravity-parent-router.md) ran three tasks through one logical Antigravity CLI 1.4.3 parent conversation. Each task used a route-selection turn followed by an execution turn. Sequential native CLI processes resumed the same conversation with explicit supported model/effort flags. No workers, fixed routing ladder, or persistent model defaults were used.
+
+| Work | Parent-selected pair | Execution `PreInvocation.modelName` | Result |
+| --- | --- | --- | --- |
+| Sort integers and remember a marker | `gemini-3.8-flash-low` / `low` | `gemini-3.8-flash-low` | Matched |
+| Analyze leases, stale workers, and crash recovery | `gemini-4-argon-high` / `high` | `gemini-4-argon-high` | Matched |
+| Recall the earlier marker and add integers | `gemini-3.8-flash-low` / `low` | `gemini-3.8-flash-low` | Matched |
+
+The parent chose these work-unit pairs from its live account-visible catalog. The controller started the first selection without model/effort overrides, then applied each validated choice using native flags. All six turns returned successful results with cumulative counts 1 through 6 and the same conversation ID. The last execution recalled the earlier marker, which was not repeated in that task, and returned the correct sum.
+
+Six independent workspace-hook observations covered selection and execution. Each execution observation matched its parent's selected exact model variant. The native catalog associates those variants with low/high/low effort; no independent effort-budget field is exposed by this hook. Records explicitly distinguish verified variants from that catalog-mapped effort evidence. Native default effort inspection after the run still reported `medium`, matching the earlier baseline.
+
+A separate two-turn feasibility probe changed from Flash/low to Opus/high through the same native conversation ID and retained a remembered marker. That probe establishes cross-model history continuity; its operator-prescribed settings are not counted as automatic selection evidence.
+
+The full run used the Node `antigravity` launcher. A later narrow cleanup change fixed a reproduced duplicate-SIGINT orphan-process case and passed the offline descendant-heartbeat test. The final implementation's offline suite passed afterward. A real npm-tarball `npx` smoke test then independently selected Flash/low, executed with a matching native variant, retained one conversation over two turns, and returned its expected marker and arithmetic result. Packaged launcher help and the six-host install/reinstall/uninstall preservation checks also passed.
+
+**Observed result: the external controller enabled parent-selected, automatically applied model/effort variants between turns with retained history.** The controller is a separate user-launched macOS/Linux read-only text prototype. This result does not mean installing the skill patches an existing App/IDE chat or changes an in-flight request.
 
 ## Independent behavioral simulation
 

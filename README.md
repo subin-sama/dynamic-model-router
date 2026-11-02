@@ -91,11 +91,21 @@ python3 scripts/codex_parent_router.py
 
 Enter tasks to continue one conversation; `/quit` exits. It adds one selection turn per task. See the [parent client guide](references/codex-parent-router.md).
 
+## Antigravity automatic parent client
+
+To let the parent choose and apply its next model/effort pair automatically:
+
+```bash
+npx --yes github:subin-sama/dynamic-model-router antigravity
+```
+
+This separate **read-only text prototype** uses native CLI flags between turns while resuming one parent conversation. It was live-tested with parent-selected **Flash/low → Argon/high → Flash/low**, matching runtime variants, and retained history. It requires macOS/Linux, Python 3.9+, and a signed-in `agy` CLI in addition to the Node/Git installation requirements. It does not change an existing App/IDE chat or make global installation alone switch its runtime. See the [Antigravity client guide](references/antigravity-parent-router.md).
+
 ## Validation and development
 
-The Python components have **47 offline tests**, plus real Codex worker and same-parent routing checks. The same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The global installer has additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
+The Python components have **74 offline tests**, plus real Codex worker and same-parent routing checks. The Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The installer and launcher have additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
 
-Antigravity CLI **1.4.3 was live-tested** in one parent conversation. The parent recommended Flash/low → Opus/high → Flash/low, while all five native runtime observations remained `gemini-4-argon-medium`. Selection worked in advisory mode; automatic parent switching did not occur. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
+Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 
 From a repository clone, run offline tests without a provider account:
 
