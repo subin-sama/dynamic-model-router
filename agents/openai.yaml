@@ -1,0 +1,6 @@
+interface:
+  display_name: "Dynamic Model Router"
+  short_description: "Choose model and effort for each task phase"
+  default_prompt: "Use $dynamic-model-router to choose and apply suitable model and reasoning effort settings for this task as its difficulty changes."
+policy:
+  allow_implicit_invocation: true
