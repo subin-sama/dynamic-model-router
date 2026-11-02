@@ -9,6 +9,7 @@ The one-command installer configures **user-wide routing instructions**, not a b
 | `codex` | `CODEX_HOME` or `~/.codex`; effective `AGENTS.override.md` when nonempty, otherwise `AGENTS.md` | Shared `~/.agents/skills/dynamic-model-router`, or an existing Codex-home `skills/dynamic-model-router` |
 | `claude-code` | `CLAUDE_CONFIG_DIR` or `~/.claude`; `CLAUDE.md` | Config-root `skills/dynamic-model-router`, with an existing shared copy reusable |
 | `gemini-cli` | `GEMINI_CLI_HOME` or the OS home, then `.gemini`; configured global context filename or `GEMINI.md` | The same home root's `.agents/skills/dynamic-model-router` or `.gemini/skills/dynamic-model-router` |
+| `antigravity` | OS home, then `.gemini/AGENTS.md` | Shared across Antigravity App, CLI, and IDE: `.gemini/config/skills/dynamic-model-router` |
 | `opencode` | `OPENCODE_CONFIG_DIR`, otherwise `XDG_CONFIG_HOME/opencode` or `~/.config/opencode`; `AGENTS.md` | Shared or native config-root `skills/dynamic-model-router` |
 | `github-copilot` | `COPILOT_HOME` or `~/.copilot`; `copilot-instructions.md` | Shared or config-root `skills/dynamic-model-router` |
 
@@ -18,9 +19,19 @@ Gemini settings support comments. The adapter reads system-default, user, and sy
 
 OpenCode configuration-directory behavior is version-sensitive. The installer reports the actual target it chose. Applicable project instructions can override user-wide guidance across hosts; managed policies and explicit user choices remain authoritative.
 
+## Antigravity
+
+The Antigravity adapter uses `~/.gemini/AGENTS.md` for always-active global instructions and `~/.gemini/config/skills/dynamic-model-router` for a skill shared by App, CLI, and IDE. It is separate from the Gemini CLI adapter. No Antigravity customization-home environment override is assumed; `GEMINI_CLI_HOME` applies only to Gemini CLI in this installer.
+
+Antigravity CLI gives same-name skills in `~/.gemini/antigravity-cli/skills/` and `~/.gemini/skills/` priority over the shared configuration skill. The App does not read those CLI-only locations. The IDE also supports legacy skills under `~/.gemini/antigravity/skills/`.
+
+Before writing, setup checks for a `dynamic-model-router` copy in each of those locations. A competing copy blocks setup unless it resolves to the selected skill or is installer-owned and updated in the same installation plan. This permits a current managed Gemini CLI copy during `--agents all`, while preventing an unresolved manual or stale copy from silently winning discovery. A conflict reports its path; review or relocate that copy before retrying.
+
+Detection uses the `agy` or legacy `antigravity` executable, or Antigravity-specific configuration directories. The presence of a generic `~/.gemini` folder alone does not identify an Antigravity installation. Detection and file installation do not prove that the running agent loaded the policy or can switch its own model.
+
 ## Selection and inspection
 
-With no options, setup targets detected supported agents. Configuration-directory presence or a corresponding executable is a detection signal, not proof of a tested runtime version. `--agents all` explicitly configures all five adapters. Unsupported IDs fail without partial setup.
+With no options, setup targets detected supported agents. Configuration-directory presence or a corresponding executable is a detection signal, not proof of a tested runtime version. `--agents all` explicitly configures all six adapters. Unsupported IDs fail without partial setup.
 
 ```bash
 npx --yes github:subin-sama/dynamic-model-router --agents codex,gemini-cli --dry-run
@@ -46,6 +57,7 @@ Uninstall removes only recorded managed activation and unchanged installer-owned
 - Codex: [global instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [skill discovery](https://learn.chatgpt.com/docs/build-skills).
 - Claude Code: [user memory/instructions](https://code.claude.com/docs/en/memory), [skills](https://code.claude.com/docs/en/skills), [environment overrides](https://code.claude.com/docs/en/env-vars).
 - Gemini CLI: [global context](https://geminicli.com/docs/cli/gemini-md/), [skills](https://geminicli.com/docs/cli/skills/), [configuration](https://geminicli.com/docs/reference/configuration/), [global storage implementation](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/config/storage.ts), [settings merge/parser](https://github.com/google-gemini/gemini-cli/blob/main/packages/cli/src/config/settings.ts).
+- Antigravity App, CLI, and IDE: [global rules](https://antigravity.google/docs/rules/), [skill locations](https://antigravity.google/docs/skills), [customization discovery and precedence](https://antigravity.google/docs/customization-discovery), [CLI executable](https://antigravity.google/docs/getting-started?tab=cli), [application data directories](https://antigravity.google/docs/hooks).
 - OpenCode: [rules](https://docs.opencode.ai/docs/rules/), [skills](https://docs.opencode.ai/docs/skills/), [configuration](https://docs.opencode.ai/docs/config/), [custom-directory behavior](https://github.com/anomalyco/opencode/issues/28658).
 - GitHub Copilot CLI: [global instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions), [skills](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills), [configuration root](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference).
 - Cursor: [skills](https://cursor.com/help/customization/skills), [User Rules](https://cursor.com/docs/rules), [vendor-reported global file-rule limitation](https://forum.cursor.com/t/why-can-t-i-see-my-rules-i-have-to-go-into-the-settings-to-find-them-previously-restarting-cursor-would-make-them-load-but-now-they-simply-dont-show-up-at-all/168811/9).

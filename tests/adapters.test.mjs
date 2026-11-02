@@ -18,15 +18,50 @@ function adapter(home, id, env = {}, hasExecutable = () => false) {
   return resolveAdapters({home, env, hasExecutable}).find(item => item.id === id);
 }
 
-test('default targets are five documented user-wide instruction files', t => {
+test('default targets are six documented user-wide instruction files', t => {
   const home = fixture(t);
   const adapters = resolveAdapters({home, env: {}});
-  assert.equal(adapters.length, 5);
+  assert.equal(adapters.length, 6);
   assert.deepEqual(adapters.map(item => path.relative(home, item.instructionPath)), [
-    '.codex/AGENTS.md', '.claude/CLAUDE.md', '.gemini/GEMINI.md',
+    '.codex/AGENTS.md', '.claude/CLAUDE.md', '.gemini/GEMINI.md', '.gemini/AGENTS.md',
     '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md',
   ]);
   assert.ok(adapters.every(item => item.detected === false));
+});
+
+test('Antigravity targets common App CLI and IDE locations independently of Gemini CLI home', t => {
+  const home = fixture(t);
+  const custom = path.join(home, 'gemini-profile');
+  const resolved = adapter(home, 'antigravity', {GEMINI_CLI_HOME: custom});
+  assert.equal(resolved.instructionPath, path.join(home, '.gemini/AGENTS.md'));
+  assert.deepEqual(resolved.skillPaths, [path.join(home, '.gemini/config/skills/dynamic-model-router')]);
+  assert.deepEqual(resolved.shadowSkillPaths, [
+    '.gemini/antigravity-cli/skills/dynamic-model-router',
+    '.gemini/skills/dynamic-model-router',
+    '.gemini/antigravity/skills/dynamic-model-router',
+  ].map(relative => path.join(home, relative)));
+  assert.equal(fs.existsSync(custom), false);
+});
+
+test('Antigravity detects current and legacy executables without creating profile files', t => {
+  const home = fixture(t);
+  for (const executable of ['agy', 'antigravity']) {
+    assert.equal(adapter(home, 'antigravity', {}, command => command === executable).detected, true);
+  }
+  assert.equal(adapter(home, 'antigravity', {}, command => command === 'gemini').detected, false);
+  assert.equal(fs.existsSync(path.join(home, '.gemini')), false);
+});
+
+test('Antigravity detects specific surface directories but not generic Gemini configuration', t => {
+  const home = fixture(t);
+  fs.mkdirSync(path.join(home, '.gemini/config'), {recursive: true});
+  assert.equal(adapter(home, 'antigravity').detected, false);
+  for (const directory of ['antigravity', 'antigravity-cli', 'antigravity-ide']) {
+    const specific = path.join(home, '.gemini', directory);
+    fs.mkdirSync(specific);
+    assert.equal(adapter(home, 'antigravity').detected, true);
+    fs.rmdirSync(specific);
+  }
 });
 
 test('detects config directories and command availability without creating files', t => {

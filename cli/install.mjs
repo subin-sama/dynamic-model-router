@@ -338,6 +338,18 @@ function plan(options, removing) {
     state.agents[target.id] = { skillPath: chosen, instructionPath };
     results.push({ id: target.id, label: target.label, status, skillPath: chosen, instructionPath, notes: target.notes || [] });
   }
+  if (!removing) {
+    for (const target of targets) {
+      const selected = state.agents[target.id].skillPath;
+      for (const candidate of target.shadowSkillPaths || []) {
+        if (!exists(candidate)) continue;
+        const resolved = actualPath(candidate);
+        if (resolved === selected || (previous.skills[resolved] && plannedSkills.has(resolved))) continue;
+        throw new Error(`${target.label}: an existing legacy skill may take priority over the common installation: ${candidate}. `
+          + 'Preserve or relocate that copy before installing, or update its installer-owned adapter in the same command. No files were changed.');
+      }
+    }
+  }
   const instructionGroups = new Map();
   for (const entry of Object.values(state.agents)) {
     const paths = instructionGroups.get(entry.instructionPath) || [];

@@ -80,6 +80,7 @@ export function resolveAdapters({home = os.homedir(), env = process.env, hasExec
   const claude = configPath(env.CLAUDE_CONFIG_DIR, path.join(home, '.claude'), home);
   const geminiRoot = configPath(env.GEMINI_CLI_HOME, home, home);
   const gemini = path.join(geminiRoot, '.gemini');
+  const antigravity = path.join(home, '.gemini');
   const xdg = configPath(env.XDG_CONFIG_HOME, path.join(home, '.config'), home);
   const opencode = configPath(env.OPENCODE_CONFIG_DIR, path.join(xdg, 'opencode'), home);
   const copilot = configPath(env.COPILOT_HOME, path.join(home, '.copilot'), home);
@@ -96,6 +97,15 @@ export function resolveAdapters({home = os.homedir(), env = process.env, hasExec
     {id: 'gemini-cli', label: 'Gemini CLI', detected: detected(gemini, 'gemini'),
       skillPaths: [path.join(geminiRoot, '.agents', 'skills', SKILL), path.join(gemini, 'skills', SKILL)],
       ...geminiInstruction(gemini, env, home)},
+    {id: 'antigravity', label: 'Antigravity',
+      detected: ['antigravity', 'antigravity-cli', 'antigravity-ide'].some(
+        directory => fs.existsSync(path.join(antigravity, directory)))
+        || Boolean(hasExecutable('agy')) || Boolean(hasExecutable('antigravity')),
+      instructionPath: path.join(antigravity, 'AGENTS.md'),
+      skillPaths: [path.join(antigravity, 'config', 'skills', SKILL)],
+      shadowSkillPaths: [path.join(antigravity, 'antigravity-cli', 'skills', SKILL),
+        path.join(antigravity, 'skills', SKILL), path.join(antigravity, 'antigravity', 'skills', SKILL)],
+      notes: ['Uses the common App, CLI, and IDE global paths; Gemini CLI home overrides do not apply.']},
     {id: 'opencode', label: 'OpenCode', detected: detected(opencode, 'opencode'),
       instructionPath: path.join(opencode, 'AGENTS.md'),
       skillPaths: [shared, path.join(opencode, 'skills', SKILL)], notes: []},

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { install, uninstall, BEGIN, END } from '../cli/install.mjs';
+import { resolveAdapters } from '../cli/adapters.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillText = '---\nname: dynamic-model-router\ndescription: Test routing policy\n---\n# Routing\n';
@@ -377,4 +378,107 @@ test('CLI staging home ignores real profile overrides and does not use a shell',
   assert.equal(fs.existsSync(external), false);
   const again = spawnSync(process.execPath, [path.join(repository, 'cli', 'bin.mjs'), 'uninstall', '--home', f.home, '--agents', 'claude-code', '--json'], { encoding: 'utf8' });
   assert.equal(again.status, 0, again.stderr);
+});
+
+test('Antigravity staging setup preserves instructions through repeat installation and removal', t => {
+  const f = fixture(t);
+  const target = path.join(f.home, '.gemini/AGENTS.md');
+  const common = path.join(f.home, '.gemini/config/skills/dynamic-model-router');
+  const original = Buffer.from('Existing Antigravity instructions\r\nKeep project conventions');
+  const options = {home: f.home, env: {}, payloadRoot: f.payloadRoot, agents: 'antigravity'};
+  write(target, original);
+  const result = install(options);
+  assert.equal(result.agents.length, 1);
+  assert.equal(result.agents[0].id, 'antigravity');
+  assert.equal(result.agents[0].skillPath, common);
+  assert.ok(bytes(target).subarray(0, original.length).equals(original));
+  assert.ok(bytes(result.backups[0]).equals(original));
+  assert.equal(fs.readFileSync(path.join(common, 'SKILL.md'), 'utf8'), skillText);
+  const installed = bytes(target);
+  assert.equal(install(options).changes.length, 0);
+  assert.ok(bytes(target).equals(installed));
+  fs.appendFileSync(target, '\r\nNew user instruction\r\n');
+  uninstall(options);
+  assert.ok(bytes(target).subarray(0, original.length).equals(original));
+  assert.ok(bytes(target).includes(Buffer.from('New user instruction')));
+  assert.equal(bytes(target).includes(Buffer.from(BEGIN)), false);
+  assert.equal(fs.existsSync(path.join(common, 'SKILL.md')), false);
+});
+
+test('Gemini and Antigravity share a configured instruction target without duplicate blocks', t => {
+  const f = fixture(t);
+  const target = path.join(f.home, '.gemini/AGENTS.md');
+  const original = 'Shared global conventions\n';
+  write(target, original);
+  write(path.join(f.home, '.gemini/settings.json'), JSON.stringify({context: {fileName: 'AGENTS.md'}}));
+  const options = {home: f.home, env: {}, payloadRoot: f.payloadRoot, agents: 'gemini-cli,antigravity'};
+  const result = install(options);
+  assert.deepEqual(result.agents.map(item => item.id), ['gemini-cli', 'antigravity']);
+  assert.ok(result.agents.every(item => item.instructionPath === target));
+  const instructions = fs.readFileSync(target, 'utf8');
+  assert.ok(instructions.startsWith(original));
+  assert.equal(instructions.split(BEGIN).length - 1, 1);
+  assert.equal(result.backups.length, 1);
+  assert.equal(install(options).changes.length, 0);
+  uninstall({...options, agents: 'antigravity'});
+  assert.equal(fs.readFileSync(target, 'utf8').split(BEGIN).length - 1, 1);
+  assert.equal(fs.existsSync(path.join(f.shared, 'SKILL.md')), true);
+  uninstall({...options, agents: 'gemini-cli'});
+  assert.equal(fs.readFileSync(target, 'utf8'), original);
+});
+
+test('Antigravity manual shadow copies stop all selected writes and identify the conflict', t => {
+  for (const relative of [
+    '.gemini/antigravity-cli/skills/dynamic-model-router',
+    '.gemini/skills/dynamic-model-router',
+    '.gemini/antigravity/skills/dynamic-model-router',
+  ]) {
+    const f = fixture(t);
+    const shadow = path.join(f.home, relative);
+    const target = path.join(f.home, '.gemini/AGENTS.md');
+    const customized = skillText + 'Manual customization\n';
+    write(path.join(shadow, 'SKILL.md'), customized);
+    write(target, 'Keep existing Antigravity instructions\n');
+    const original = bytes(target);
+    assert.throws(() => install({home: f.home, env: {}, payloadRoot: f.payloadRoot, agents: 'codex,antigravity'}),
+      error => error.message.includes(shadow));
+    assert.ok(bytes(target).equals(original));
+    assert.equal(fs.readFileSync(path.join(shadow, 'SKILL.md'), 'utf8'), customized);
+    assert.equal(fs.existsSync(path.join(f.home, '.codex/AGENTS.md')), false);
+    assert.equal(fs.existsSync(path.join(f.home, '.gemini/config/skills/dynamic-model-router')), false);
+    assert.equal(fs.existsSync(path.join(f.home, '.config/dynamic-model-router/install-state.json')), false);
+  }
+});
+
+test('Antigravity accepts a shadow symlink that resolves to its common installed skill', t => {
+  const f = fixture(t);
+  const options = {home: f.home, env: {}, payloadRoot: f.payloadRoot, agents: 'antigravity'};
+  install(options);
+  const common = path.join(f.home, '.gemini/config/skills/dynamic-model-router');
+  const shadow = path.join(f.home, '.gemini/antigravity-cli/skills/dynamic-model-router');
+  fs.mkdirSync(path.dirname(shadow), {recursive: true});
+  fs.symlinkSync(common, shadow, 'dir');
+  assert.equal(install(options).changes.length, 0);
+  assert.equal(fs.lstatSync(shadow).isSymbolicLink(), true);
+});
+
+test('Antigravity permits owned native Gemini copies only while they are updated in the same plan', t => {
+  const f = fixture(t);
+  const legacy = path.join(f.home, '.gemini/skills/dynamic-model-router');
+  const adapters = resolveAdapters({home: f.home, env: {}});
+  const gemini = adapters.find(item => item.id === 'gemini-cli');
+  install({home: f.home, env: {}, payloadRoot: f.payloadRoot, agents: 'gemini-cli',
+    adapters: [{...gemini, skillPaths: [legacy]}]});
+  fs.writeFileSync(path.join(f.payloadRoot, 'SKILL.md'), skillText + 'Updated routing policy\n');
+  const options = {home: f.home, env: {}, payloadRoot: f.payloadRoot};
+  const before = bytes(path.join(legacy, 'SKILL.md'));
+  assert.throws(() => install({...options, agents: 'antigravity'}), error => error.message.includes(legacy));
+  assert.ok(bytes(path.join(legacy, 'SKILL.md')).equals(before));
+  assert.equal(fs.existsSync(path.join(f.home, '.gemini/AGENTS.md')), false);
+  const result = install({...options, agents: 'gemini-cli,antigravity'});
+  assert.deepEqual(result.agents.map(item => item.id), ['gemini-cli', 'antigravity']);
+  assert.ok(bytes(path.join(legacy, 'SKILL.md')).includes(Buffer.from('Updated routing policy')));
+  const common = path.join(f.home, '.gemini/config/skills/dynamic-model-router');
+  assert.ok(bytes(path.join(common, 'SKILL.md')).equals(bytes(path.join(legacy, 'SKILL.md'))));
+  assert.equal(install({...options, agents: 'gemini-cli,antigravity'}).changes.length, 0);
 });

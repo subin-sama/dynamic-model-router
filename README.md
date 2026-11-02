@@ -12,7 +12,7 @@ npx --yes github:subin-sama/dynamic-model-router
 
 The command detects supported agents, installs the skill, backs up their existing global instruction files, and adds an identifiable routing block for **every task in every project**. You do not need to edit `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` yourself. Existing user content, including non-English text, stays intact.
 
-To configure all five supported agents, including ones not yet installed:
+To configure all six supported agents, including ones not yet installed:
 
 ```bash
 npx --yes github:subin-sama/dynamic-model-router --agents all
@@ -33,10 +33,13 @@ npx --yes github:subin-sama/dynamic-model-router --agents all --dry-run
 | Codex | `~/.codex/AGENTS.md`, or an existing nonempty global `AGENTS.override.md` | Yes |
 | Claude Code | `~/.claude/CLAUDE.md` | Yes |
 | Gemini CLI | `~/.gemini/GEMINI.md`, honoring configured context filenames | Yes |
+| Antigravity App / CLI / IDE | `~/.gemini/AGENTS.md` | Yes |
 | OpenCode | `~/.config/opencode/AGENTS.md` | Yes |
 | GitHub Copilot CLI | `~/.copilot/copilot-instructions.md` | Yes |
 
 The installer respects supported custom configuration-home environment variables and reuses valid existing skill installations. Fresh shared installs use `~/.agents/skills/dynamic-model-router` where the host supports that location; native locations are used when needed to avoid conflicting copies. See [host integration](references/global-installation.md) for exact paths and scope.
+
+For Antigravity only, run `npx --yes github:subin-sama/dynamic-model-router --agents antigravity`. Its App, CLI, and IDE share the skill at `~/.gemini/config/skills/dynamic-model-router`. Setup checks for competing copies in CLI-specific and legacy locations before writing; see [Antigravity installation details](references/global-installation.md#antigravity).
 
 The routing policy is agent-agnostic. **Automatic setup is limited to hosts with verified user-wide local instruction mechanisms.** Cursor's account-level User Rules and hosted chat products need their own integration; this command does not pretend to configure every AI product. Project, session, organization, and host restrictions still apply.
 
@@ -91,6 +94,8 @@ Enter tasks to continue one conversation; `/quit` exits. It adds one selection t
 ## Validation and development
 
 The Python components have **47 offline tests**, plus real Codex worker and same-parent routing checks. The same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The global installer has additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
+
+Antigravity global activation paths are checked against official documentation. Local `agy` 1.4.3 help confirms CLI model/effort flags; automatic routing has not been tested in a live Antigravity session.
 
 From a repository clone, run offline tests without a provider account:
 

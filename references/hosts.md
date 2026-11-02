@@ -58,6 +58,27 @@ Sources checked 2026-11-02; CLI execution not tested:
 - [Subagents](https://geminicli.com/docs/core/subagents/)
 - [Skills](https://geminicli.com/docs/cli/skills/)
 
+## Antigravity App, CLI, and IDE
+
+Use the current surface's available models and actual tool schema. Antigravity documents a model picker and thinking levels, but a user-facing picker or slash command is not automatically callable by the agent. Do not assume a skill can change the active parent session. A model selection made while a turn is running takes effect after that turn completes, not during its execution.
+
+The CLI exposes `--model` and `--effort` for a new session or external run; discover model labels with `agy models` and confirm installed-client options with `agy --help`. Pass only effort levels available for the selected model. Documented levels are `low`, `medium`, `high`, and model-dependent `xhigh` or `max`; some models have a fixed reasoning budget. Local `agy` 1.4.3 help was inspected on 2026-11-02 and advertised both flags. No live Antigravity routing session was run.
+
+Interactive `/model` and `/effort <level>` can persist user defaults. Avoid changing those defaults for per-task routing. The `--effort` flag applies only to the invocation/session. In headless mode, `agy -p "/effort"` reports current and available effort settings; `/effort` takes no argument there. Starting another CLI run is an `external-run`, with an explicit context handoff and the existing permission boundaries, not a switch of the current parent conversation.
+
+App and CLI custom subagents document `model: inherit`, `flash`, or `pro`. Use an exposed subagent control or an existing configured agent only within its actual schema; the documented frontmatter does not establish an `effort` field. Hooks expose `modelName` for observation, but their documented outputs do not provide a model-switch setting. Without a permitted native control or an authorized external controller, continue in advisory mode.
+
+For global activation, install the shared skill in `~/.gemini/config/skills/dynamic-model-router` and use the always-active `~/.gemini/AGENTS.md`. App, CLI, and IDE support these paths. CLI-specific same-name copies can override the shared skill; follow the installer's [collision checks](global-installation.md#antigravity). Global activation does not establish runtime model access, effective effort, or successful automatic switching.
+
+Sources checked 2026-11-02; CLI help inspected locally, live routing not tested:
+
+- [Model selection](https://antigravity.google/docs/models)
+- [CLI model and effort flags](https://antigravity.google/docs/cli/reference/)
+- [Effort behavior and inspection](https://antigravity.google/docs/cli/commands/effort/)
+- [Custom subagents](https://antigravity.google/docs/subagents/)
+- [Hooks and model observation](https://antigravity.google/docs/hooks)
+- [Global rules](https://antigravity.google/docs/rules/), [skills](https://antigravity.google/docs/skills), and [discovery precedence](https://antigravity.google/docs/customization-discovery)
+
 ## API agents and other hosts
 
 OpenCode, GitHub Copilot CLI, and other local coding agents can load the same portable policy through their supported skill or instruction mechanisms. Use their actual exposed controls and model catalogs; do not send Codex or Claude argument names to an unrelated host. The installer configures global instructions separately from runtime model application; see [global-installation.md](global-installation.md).
