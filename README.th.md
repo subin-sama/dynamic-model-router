@@ -51,13 +51,18 @@ $dynamic-model-router ช่วยแก้บั๊กนี้ เลือก
 
 ถ้าต้องการให้โปรเจกต์ใช้เป็นค่าเริ่มต้น ให้เพิ่มข้อความต่อไปนี้ในไฟล์คำสั่งของโปรเจกต์เอง เช่น `AGENTS.md`, `CLAUDE.md` หรือ `GEMINI.md` ตามแพลตฟอร์ม:
 
+สำหรับ Codex หากต้องการให้ใช้ทุกโปรเจกต์ ให้เพิ่มใน `~/.codex/AGENTS.md` โดยเก็บคำสั่งเดิมไว้ด้วย หากใช้เฉพาะโปรเจกต์ ให้เพิ่มใน `AGENTS.md` ของโปรเจกต์นั้น
+
 ```text
-Use the installed dynamic-model-router skill for this project's tasks.
+Use the installed dynamic-model-router skill for every task.
 Reassess model and native reasoning settings at meaningful phase boundaries.
 Apply selections only through controls this host exposes and permits.
+Preserve explicit user model and effort choices.
 ```
 
 ข้อความนี้เป็นการเปิดใช้นโยบายของสกิล ไม่เพิ่มสิทธิ์ในการเปลี่ยนค่าที่โฮสต์ไม่อนุญาต แพ็กนี้ไม่แก้ไฟล์คำสั่งหรือค่าตั้งต้นทั่วเครื่องให้เอง
+
+ถ้าต้องการให้ **agent แม่เลือกและเปลี่ยนค่าทุกงานที่ป้อน** ให้เปิด `python3 scripts/codex_parent_router.py` แล้วพิมพ์งานต่อเนื่องในตัวควบคุมนั้นได้เลย ทุกงานจะผ่านการเลือกค่าก่อนทำงาน ตัวควบคุมยังไม่ได้ดักข้อความจากแชต desktop เดิมอัตโนมัติ
 
 ## ไฟล์ในแพ็ก
 

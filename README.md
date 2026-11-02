@@ -51,6 +51,21 @@ Invoke in Claude Code:
 
 In Gemini CLI, ask it to activate the `dynamic-model-router` skill through its normal consent flow. When Gemini's native Auto already meets the objective, the skill retains that router instead of introducing a competing loop.
 
+### Activate for every task
+
+After installing the skill, add this to the applicable instruction file:
+
+```md
+Use the installed dynamic-model-router skill for every task.
+Reassess model and native reasoning effort at meaningful phase boundaries.
+Apply choices only through controls this host exposes and permits.
+Preserve explicit user model and effort choices.
+```
+
+For Codex, use `~/.codex/AGENTS.md` for a user-wide instruction or a project's `AGENTS.md` for project scope. Merge the snippet with existing instructions. Other hosts use their applicable instruction file, such as `CLAUDE.md` or `GEMINI.md`.
+
+This requests skill activation for every task; it does not add a missing runtime-switch tool or guarantee that every individual tool call reselects a model. In the optional parent client below, every task entered into the running client already goes through routing. Existing desktop chats are not automatically intercepted by this client.
+
 ## Run the Codex parent prototype
 
 Requires Python **3.9+**, an installed Codex CLI with the necessary App Server methods, and an existing Codex sign-in. The scripts use only the Python standard library.
