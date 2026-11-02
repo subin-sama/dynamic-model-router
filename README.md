@@ -2,151 +2,107 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A portable agent skill that chooses a suitable **model and native reasoning effort for each task phase**, then applies the choice through controls the host actually supports.
+A portable model and reasoning-effort routing skill, with a **one-command global installer** that preserves existing user instructions.
 
-[ภาษาไทย](README.th.md) · [Host compatibility](references/hosts.md) · [Validation](VALIDATION.md)
+## Install and enable globally
 
-Use a fast suitable pair for routine work, deepen reasoning when uncertainty and interacting constraints justify it, and reduce intensity when the remaining work becomes straightforward. Model names are discovered locally rather than pinned to a universal ranking. Explicit user locks are preserved.
+```bash
+npx --yes github:subin-sama/dynamic-model-router
+```
 
-## Two ways to use it
+The command detects supported agents, installs the skill, backs up their existing global instruction files, and adds an identifiable routing block for **every task in every project**. You do not need to edit `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` yourself. Existing user content, including non-English text, stays intact.
 
-| Mode | What it does |
-| --- | --- |
-| Portable skill | Guides routing in Codex, Claude Code, Gemini CLI, or an API agent. Applies choices through permitted host controls; otherwise reports a recommendation honestly. |
-| Optional Codex parent client | Lets one parent conversation choose its next model/effort pair, applies it between turns, and preserves history. This is a **separate, read-only text prototype**, not a hook in an existing desktop chat or a full coding client. |
+To configure all five supported agents, including ones not yet installed:
 
-The skill does not guarantee activation on every message. A prompt saying “think harder” is not proof that the runtime reasoning setting changed. Actual setting support and permissions depend on the host, client version, and account.
+```bash
+npx --yes github:subin-sama/dynamic-model-router --agents all
+```
 
-## Quick install
+Requires Node.js **20+**, npm/npx, and Git for installation from GitHub. No npm account, separate API key, global npm package, or background service is needed. Restart or refresh your agents after setup so they load their global instructions.
 
-Install for Codex across projects with the standard [skills CLI](https://github.com/vercel-labs/skills):
+Preview without changing files:
+
+```bash
+npx --yes github:subin-sama/dynamic-model-router --agents all --dry-run
+```
+
+## Supported global activation
+
+| Agent | Default global instruction file | Automatic setup |
+| --- | --- | --- |
+| Codex | `~/.codex/AGENTS.md`, or an existing nonempty global `AGENTS.override.md` | Yes |
+| Claude Code | `~/.claude/CLAUDE.md` | Yes |
+| Gemini CLI | `~/.gemini/GEMINI.md`, honoring configured context filenames | Yes |
+| OpenCode | `~/.config/opencode/AGENTS.md` | Yes |
+| GitHub Copilot CLI | `~/.copilot/copilot-instructions.md` | Yes |
+
+The installer respects supported custom configuration-home environment variables and reuses valid existing skill installations. Fresh shared installs use `~/.agents/skills/dynamic-model-router` where the host supports that location; native locations are used when needed to avoid conflicting copies. See [host integration](references/global-installation.md) for exact paths and scope.
+
+The routing policy is agent-agnostic. **Automatic setup is limited to hosts with verified user-wide local instruction mechanisms.** Cursor's account-level User Rules and hosted chat products need their own integration; this command does not pretend to configure every AI product. Project, session, organization, and host restrictions still apply.
+
+## Existing instructions and updates
+
+- Existing instruction bytes are preserved outside the managed block, including Unicode, BOMs, CRLF, and missing final newlines.
+- Changed instruction files are backed up before replacement. State and backups are stored under `~/.config/dynamic-model-router/`.
+- Re-running the command updates its own block without appending duplicates. Detected conflicting edits stop the operation.
+- Valid manual skill copies are reused without overwriting their contents. Installer-owned files are updated only while their recorded contents remain unchanged.
+- Existing file symlinks are retained, shared targets are deduplicated, and failed operations roll back their own changes where no concurrent edit is detected.
+
+Run the install command again for managed updates. Select particular agents with `--agents codex,claude-code`.
+
+Remove managed activation and unchanged installer-owned files:
+
+```bash
+npx --yes github:subin-sama/dynamic-model-router uninstall
+```
+
+Uninstall preserves user additions, modified files, and pre-existing manual installations. It does not restore an old whole-file backup over newer user instructions.
+
+## What routing does
+
+Choose a fast suitable model/effort pair for routine work, deepen reasoning when uncertainty and interacting constraints justify it, and reduce intensity when the remaining work becomes straightforward. Discover model names and supported native settings from the host rather than using a fixed universal ranking. Preserve explicit user model and effort choices.
+
+Global activation makes this policy part of the host's user instructions. **Actual model changes require a control the host exposes and permits.** The skill distinguishes recommendations, submitted settings, applied settings, and runtime verification. Installing it does not create a missing switch control or change a request already in flight.
+
+Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](references/hosts.md) for runtime boundaries.
+
+## Standard skill-manager alternative
+
+If you want only skill files and prefer managing activation yourself:
 
 ```bash
 npx skills add subin-sama/dynamic-model-router -g -a codex -y
 ```
 
-Requires Node.js **22.20+** for the current skills CLI. To choose agents interactively, use `npx skills add subin-sama/dynamic-model-router -g`. Omit `-g` for a project-only installation. The installer discovers this repository's root `SKILL.md`; no custom npm package or manual file copying is needed. For Codex, the current standard global destination is `~/.agents/skills/dynamic-model-router`.
+The standard `skills` CLI discovers this repository's root `SKILL.md`, but does not edit global instruction files. Its current release requires Node.js 22.20+. The one-command installer above includes global activation.
 
-Refresh/reopen the agent after installation. If you already installed this skill manually, keep one installation in directories your host scans.
+## Optional Codex parent client
 
-Update a standard global installation:
+The package also contains a separate, **read-only text prototype** that lets one parent conversation select and apply its next model/effort pair between turns while retaining history. It does not attach a hook to an existing desktop chat or act as a full coding client.
 
-```bash
-npx skills update dynamic-model-router -g -y
-```
-
-### Install and enable through Codex
-
-You can also paste this into Codex, using its built-in skill installer:
-
-```text
-Use $skill-installer to install https://github.com/subin-sama/dynamic-model-router
-and enable dynamic-model-router for every task in my global AGENTS.md.
-Preserve all existing instructions.
-```
-
-Standard `skills add` installs the files; it does not edit global `AGENTS.md`. The request above explicitly asks Codex to do both. The [persistent activation instructions](#activate-for-every-task) below remain available for manual setup.
-
-### Manual clone alternative
-
-Clone the repository into **one** skill directory your host discovers. The repository root contains `SKILL.md`.
-
-Codex, or Gemini CLI installations supporting the shared skill directory:
-
-```bash
-git clone https://github.com/subin-sama/dynamic-model-router.git \
-  "$HOME/.agents/skills/dynamic-model-router"
-```
-
-Claude Code:
-
-```bash
-git clone https://github.com/subin-sama/dynamic-model-router.git \
-  "$HOME/.claude/skills/dynamic-model-router"
-```
-
-For a project-only installation, use `.agents/skills/dynamic-model-router` or `.claude/skills/dynamic-model-router` in that project. Some Codex versions also support a configured Codex-home skills directory. Refresh/reopen the host if needed and avoid installing duplicate copies in directories it scans.
-
-Invoke in Codex:
-
-```text
-$dynamic-model-router Investigate this bug. Choose model and effort as the work changes.
-```
-
-Invoke in Claude Code:
-
-```text
-/dynamic-model-router Investigate this bug and choose suitable model/effort settings.
-```
-
-In Gemini CLI, ask it to activate the `dynamic-model-router` skill through its normal consent flow. When Gemini's native Auto already meets the objective, the skill retains that router instead of introducing a competing loop.
-
-### Activate for every task
-
-After installing the skill, add this to the applicable instruction file:
-
-```md
-Use the installed dynamic-model-router skill for every task.
-Reassess model and native reasoning effort at meaningful phase boundaries.
-Apply choices only through controls this host exposes and permits.
-Preserve explicit user model and effort choices.
-```
-
-For Codex, use `~/.codex/AGENTS.md` for a user-wide instruction or a project's `AGENTS.md` for project scope. Merge the snippet with existing instructions. Other hosts use their applicable instruction file, such as `CLAUDE.md` or `GEMINI.md`.
-
-This requests skill activation for every task; it does not add a missing runtime-switch tool or guarantee that every individual tool call reselects a model. In the optional parent client below, every task entered into the running client already goes through routing. Existing desktop chats are not automatically intercepted by this client.
-
-## Run the Codex parent prototype
-
-Requires Python **3.9+**, an installed Codex CLI with the necessary App Server methods, and an existing Codex sign-in. The scripts use only the Python standard library.
-
-From the installed or cloned repository:
+From a repository clone or installed skill folder, with Python 3.9+ and an existing Codex sign-in:
 
 ```bash
 python3 scripts/codex_parent_router.py
 ```
 
-Enter tasks to continue one parent conversation; `/quit` exits. For each task, the parent selects a pair in a short selection turn and the client applies it before the execution turn. This adds **one selection turn per task**. There is no measured cost or speed improvement claim.
+Enter tasks to continue one conversation; `/quit` exits. It adds one selection turn per task. See the [parent client guide](references/codex-parent-router.md).
 
-You can also pass tasks directly:
+## Validation and development
 
-```bash
-python3 scripts/codex_parent_router.py \
-  --task 'Remember token LANTERN-42. Sort these IDs: B, A, B.' \
-  --task 'Return the remembered token.'
-```
+The Python components have **47 offline tests**, plus real Codex worker and same-parent routing checks. The same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The global installer has additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
 
-Options include `--objective balanced|speed|quality`, independent `--model-lock` and `--effort-lock`, `--codex /path/to/codex`, and `--timeout`. An optional `--transcript PATH` records task text and results locally. See the [parent client guide](references/codex-parent-router.md).
-
-This prototype disables shell, plugins, apps, memories, and subagents. It does not modify global model defaults. It changes the parent **between turns**, not during an in-flight request.
-
-## What has been tested
-
-- **47 offline tests** for catalog handling, exact native settings/locks, RPC transport, same-parent sequencing, failures, and runtime-evidence handling.
-- Real Codex native-worker routing: worker dispatches matched the resolved runtime model and effort.
-- Real same-parent routing on one continuous conversation: **Luna/low → Sol/high → Luna/low**, with history retained and matching execution `turn_context` values.
-- A final-build live smoke test completed with matching runtime settings.
-
-Live tests used the desktop-bundled Codex CLI `0.166.0-alpha.5.1` on macOS. Claude Code and Gemini CLI integration guidance was checked against official documentation, not live-tested in those runtimes. Windows transport is not live-tested. See [VALIDATION.md](VALIDATION.md) for boundaries and the public test summary; private runtime session identifiers are not published.
-
-Run the offline suite without a Codex account or provider calls:
+From a repository clone, run offline tests without a provider account:
 
 ```bash
+npm test
 python3 -m unittest discover -s tests -v
 ```
 
-The Codex-only cache inspector is also available:
+No quality, cost, or latency improvement is promised. Runtime checks establish the tested Codex configuration, not universal model-selection quality or independent provider-side attestation.
 
-```bash
-python3 scripts/inspect_models.py
-```
-
-It reads only the chosen local model catalog and does not launch a model or establish account entitlement.
-
-## Contributing
-
-Open an issue or pull request with the host/version, reproducible behavior, and sanitized evidence. Keep model selection separate from runtime application and verification. Run the offline tests for Python changes. Provider-backed tests should be explicitly requested and described separately from mocks or simulations.
+Contributions should include the host/version, reproducible behavior, and sanitized evidence. New global adapters need official instruction-path documentation and preservation tests.
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2026 subin-sama. You may use, modify, redistribute, and use the project commercially under the license terms. Preserve the copyright and permission notice. The software is provided without warranty.
+[MIT](LICENSE) — Copyright (c) 2026 subin-sama. Preserve the copyright and permission notice when redistributing. The software is provided without warranty.

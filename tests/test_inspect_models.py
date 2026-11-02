@@ -22,7 +22,7 @@ NOW = datetime(2026, 11, 2, 5, tzinfo=timezone.utc)
 def model(slug="available", efforts=("low", "high"), **overrides):
     result = {
         "slug": slug,
-        "display_name": "รุ่นทดสอบ",
+        "display_name": "Test model 🌍",
         "description": "Image-capable test model",
         "visibility": "list",
         "supported_reasoning_levels": [{"effort": effort, "description": "unused"} for effort in efforts],
@@ -106,7 +106,7 @@ class CatalogTests(unittest.TestCase):
                                       identity="SECRET-IDENTITY", etag="SECRET-ETAG"))
         encoded = json.dumps(result, ensure_ascii=False)
         self.assertNotIn("SECRET-", encoded)
-        self.assertIn("รุ่นทดสอบ", encoded)
+        self.assertIn("Test model 🌍", encoded)
         self.assertEqual(set(result["models"][0]), {
             "id", "display_name", "description", "supported_efforts", "default_effort", "input_modalities"})
 

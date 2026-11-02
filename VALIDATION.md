@@ -1,6 +1,6 @@
 # Validation
 
-Last checked: 2026-11-02. The repository includes a portable skill, a Codex catalog inspector, and an optional read-only parent App Server client. It does not run a background service or install a hook into the current desktop composer.
+Last checked: 2026-11-02. The repository includes a portable skill, a one-command global installer, a Codex catalog inspector, and an optional read-only parent App Server client. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
 
 ## Offline tests
 
@@ -19,6 +19,18 @@ python3 -m unittest discover -s tests -v
 The offline tests do not call Codex or a provider. Skill-creator structural validation also passed for the skill entrypoint.
 
 ## Installation checks
+
+### One-command installer
+
+The Node installer has **41 passing real-filesystem tests**: 31 core preservation/ownership/CLI cases and 10 host-adapter cases. Together with the 47 Python tests, the repository has **88 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, symlink changes, concurrent edits, rollback, safe updates, and uninstall retaining newer user edits.
+
+An independently reviewed npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All five global instruction targets were configured with their original byte prefixes retained and one managed block each. A second run made zero changes. Packaged uninstall retained the originals and a user instruction added after installation. These are real installation/filesystem tests, not provider or model calls.
+
+The distribution is English-only, including documentation, installer output, and test fixtures. The installer intentionally preserves non-English user instructions. No credentials, personal profile files, or raw runtime session identifiers are included in the npm payload.
+
+Installation support is verified for the five documented adapters. It configures user-wide context; it cannot force model compliance, override managed restrictions, or install a global hook into arbitrary closed AI products. Native model/effort behavior remains separately bounded below.
+
+### Standard alternatives
 
 The standard `skills` CLI discovers the repository-root `SKILL.md` without a custom package. A real project-scoped installation using `npx skills add subin-sama/dynamic-model-router --agent codex --yes` succeeded in an isolated workspace, including a check with skills 1.7.4 and Node.js 24.6.0. The installed skill, license, and controller scripts matched the repository, its controller help command worked, and all 47 offline tests passed from that installed copy. Discovery and listing were also verified through the CLI.
 

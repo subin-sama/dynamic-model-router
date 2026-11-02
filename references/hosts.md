@@ -60,6 +60,8 @@ Sources checked 2026-11-02; CLI execution not tested:
 
 ## API agents and other hosts
 
+OpenCode, GitHub Copilot CLI, and other local coding agents can load the same portable policy through their supported skill or instruction mechanisms. Use their actual exposed controls and model catalogs; do not send Codex or Claude argument names to an unrelated host. The installer configures global instructions separately from runtime model application; see [global-installation.md](global-installation.md).
+
 Use an existing authorized controller, not a new undeclared API client. Before each new request/work unit, select a model and only provider-native reasoning fields supported by that exact endpoint/model. The skill does not contain an API gateway, proxy, background service, or API credentials.
 
 A model-list response commonly establishes IDs, not full modality/tool/reasoning support or pricing. Use current endpoint schemas, official model documentation, or the controller's validated registry. Do not infer identical effort semantics across providers. Configuring a future request does not alter an in-flight request.

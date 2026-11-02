@@ -1,6 +1,6 @@
 ---
 name: dynamic-model-router
-description: Dynamically select available models and native reasoning settings for task phases and delegated work. Use when a user enables automatic model/effort choice or asks to adapt quality, latency, or cost in Codex, Claude Code, Gemini CLI, or an API agent.
+description: Dynamically select available models and native reasoning settings for task phases and delegated work. Use when automatic routing is enabled or a user asks to adapt quality, latency, or cost in AI agents such as Codex, Claude Code, Gemini CLI, OpenCode, Copilot CLI, or an API agent.
 ---
 
 # Dynamic Model Router

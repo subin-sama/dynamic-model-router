@@ -1,0 +1,32 @@
+{
+  "name": "dynamic-model-router",
+  "version": "0.2.0",
+  "description": "Install a portable model and reasoning-effort routing skill with preserved global instructions.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/subin-sama/dynamic-model-router.git"
+  },
+  "homepage": "https://github.com/subin-sama/dynamic-model-router#readme",
+  "bugs": "https://github.com/subin-sama/dynamic-model-router/issues",
+  "type": "module",
+  "bin": {
+    "dynamic-model-router": "cli/bin.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "cli/",
+    "SKILL.md",
+    "LICENSE",
+    "README.md",
+    "VALIDATION.md",
+    "agents/",
+    "references/",
+    "scripts/"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

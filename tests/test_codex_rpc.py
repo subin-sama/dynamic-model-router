@@ -32,7 +32,7 @@ for line in sys.stdin:
         continue
     request_id = value['id']
     if method == 'event-first':
-        send({'method':'before','params':{'value':'คะ'}})
+        send({'method':'before','params':{'value':'Unicode 🌍'}})
         send({'method':'unrelated','params':{}})
         send({'id':request_id,'result':{'ok':True}})
     elif method == 'echo':
@@ -71,7 +71,7 @@ class RpcTests(unittest.TestCase):
         with client() as rpc:
             self.assertEqual(rpc.request('event-first', {}), {'ok': True})
             first = rpc.wait_notification(lambda n: n['method'] == 'before')
-            self.assertEqual(first['params']['value'], 'คะ')
+            self.assertEqual(first['params']['value'], 'Unicode 🌍')
             second = rpc.wait_notification(lambda n: n['method'] == 'unrelated')
             self.assertEqual(second['params'], {})
 
