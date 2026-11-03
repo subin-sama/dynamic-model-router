@@ -155,6 +155,11 @@ function blockFor(paths, newline) {
     'Reassess model and native reasoning effort at meaningful task or phase boundaries.',
     'Apply selections only through controls this host exposes and permits. Preserve explicit user model and effort choices.',
     'Distinguish recommended, requested, applied, and runtime-verified settings accurately.',
+    'At each task start, show a short visible chat receipt: [Routing][status][scope] model=value; effort=value — brief reason in the user\'s language.',
+    'Use parent, worker:name, or external:name for scope. Update the receipt only for meaningful setting, scope, evidence, fallback, or outcome changes.',
+    'Use recommended before application, requested after submission, applied after host acknowledgement, and verified only for matching runtime evidence.',
+    'Use unchanged for inherited/no-change settings and unknown for unexposed values; never invent a model or effort or claim a worker change affected the parent.',
+    'Visibly report verified, unverified, or error outcomes. Qualify partial evidence; assistant chat receipts are not native app banners or guaranteed host logs.',
     'Installation does not grant a missing model-switch control or change an in-flight request.',
     END, '',
   ].join(newline), 'utf8');

@@ -1,10 +1,10 @@
 # Validation
 
-Last checked: 2026-11-02. The repository includes a portable skill, a one-command global installer, a Codex catalog inspector, and an optional read-only parent App Server client. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
+Last checked: 2026-11-03. The repository includes a portable skill, a one-command global installer, a Codex catalog inspector, and an optional read-only parent App Server client. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
 
 ## Offline tests
 
-**74 tests passed** on the development host using Python 3.9.6:
+**79 tests passed** on the development host using Python 3.9.6:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
@@ -12,6 +12,7 @@ Last checked: 2026-11-02. The repository includes a portable skill, a one-comman
 | RPC transport | 13 | Event-before-response ordering, concurrent IDs, bounded deadlines/cleanup, safe request rejection, EOF, bounded stderr |
 | Parent client | 23 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup |
 | Antigravity parent client | 27 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, repeated-interrupt process cleanup |
+| Routing receipts | 5 | Compact output, unknown values, truthful Codex and Antigravity verified/unverified/error outcomes, scope and evidence qualifiers |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -23,7 +24,7 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node installer and launcher have **52 passing tests**: 36 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 74 Python tests, the repository has **126 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
+The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 79 Python tests, the repository has **132 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
@@ -106,6 +107,18 @@ A separate two-turn feasibility probe changed from Flash/low to Opus/high throug
 The full run used the Node `antigravity` launcher. A later narrow cleanup change fixed a reproduced duplicate-SIGINT orphan-process case and passed the offline descendant-heartbeat test. The final implementation's offline suite passed afterward. A real npm-tarball `npx` smoke test then independently selected Flash/low, executed with a matching native variant, retained one conversation over two turns, and returned its expected marker and arithmetic result. Packaged launcher help and the six-host install/reinstall/uninstall preservation checks also passed.
 
 **Observed result: the external controller enabled parent-selected, automatically applied model/effort variants between turns with retained history.** The controller is a separate user-launched macOS/Linux read-only text prototype. This result does not mean installing the skill patches an existing App/IDE chat or changes an in-flight request.
+
+## Visible routing receipts
+
+The 0.3.1 skill requires a task-start receipt and updates for meaningful setting, scope, evidence, fallback, or outcome changes. The managed installation block carries the same requirement, including when it reuses an older manual skill. A real-filesystem migration test upgraded an older owned block while preserving the user's original instructions, later additions, exact backup bytes, repeat-install idempotence, and uninstall boundaries.
+
+Five additional Python checks exercise public receipt formatting and truthful CLI outcomes. They cover unknown values, single-line formatting, unsupported status rejection, verified/unverified/error output, and Antigravity's model-variant-only effort qualifier. The CLI adapters retain their previous structured record schemas and do not claim runtime verification from dispatch or completed answers alone.
+
+Global receipt instructions were applied to the development user's Codex and Claude Code profiles with prior instruction bytes retained as exact prefixes and two backups created. The manual Codex skill's communication section was updated with its preceding content preserved; it remains unowned by the installer. A repeat setup made zero changes.
+
+A real read-only text task through the desktop-bundled Codex CLI 0.166.0-alpha.5.1 loaded those global instructions without a skill invocation or a request to display a receipt. It emitted an initial `[Routing][unchanged][parent]` receipt with unknown model/effort values and then answered the sorting task correctly. This verifies that one normal Codex engine conversation produced the requested chat text; no desktop renderer automation was performed. The separate older PATH CLI was incompatible with the current configuration and is not counted as a successful check. Claude Code's CLI was not signed in, so its configuration was installed and checked but no live Claude response is claimed.
+
+Normal-chat receipts are generated assistant messages. This instruction and installer validation does not establish a native desktop event hook or guarantee that every model will obey the receipt instruction in every chat.
 
 ## Independent behavioral simulation
 

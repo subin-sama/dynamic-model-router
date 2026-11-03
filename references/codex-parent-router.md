@@ -18,6 +18,8 @@ python3 scripts/codex_parent_router.py
 
 Enter a task at the prompt. The parent chooses settings before performing it. Enter another task to continue the same conversation, or `/quit` to stop. This initial prototype is **read-only text work**: shell, plugins, apps, memories, and subagent features are disabled for its thread. It does not yet serve as a full coding client or attach to an existing desktop conversation.
 
+The terminal emits `[Routing][status][parent]` receipts at task start, after submitting settings, and when execution finishes. Outcomes distinguish per-turn `verified` model/effort evidence, `unverified` completion with missing evidence, and `error` without automatic replay. Values not exposed by the runtime remain `unknown`.
+
 One task:
 
 ```bash

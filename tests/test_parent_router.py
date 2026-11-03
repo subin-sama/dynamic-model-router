@@ -244,6 +244,45 @@ class SameParentTests(unittest.TestCase):
         self.assertTrue(all(entry['status'] == 'completed_verified_runtime' for entry in [first, second]))
         self.assertEqual(router.current, {'model': 'fast', 'effort': 'low'})
 
+    def test_visible_requested_receipt_follows_submission_and_runtime_receipt_follows_execution(self):
+        rpc, router = self.make_router()
+        output = io.StringIO()
+        def run(rpc_arg, thread, text, timeout, schema=None):
+            if schema is not None:
+                self.assertEqual(output.getvalue().splitlines(), [
+                    '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed'])
+                return {'turn_id': 'selection', 'text': json.dumps(route('deep', 'high'))}
+            self.assertEqual(rpc.events[-1], 'thread/settings/update')
+            self.assertEqual(output.getvalue().splitlines(), [
+                '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed',
+                '[Routing][requested][parent] model=deep; effort=high — Suitable for the next bounded task.'])
+            return {'turn_id': 'execution', 'text': 'Public answer'}
+        with patch.object(module, 'run_turn', side_effect=run), \
+             patch.object(module, 'resolved_turn', return_value={'model': 'deep', 'effort': 'high'}), \
+             contextlib.redirect_stderr(output):
+            entry = router.execute('Task')
+        self.assertEqual(entry['status'], 'completed_verified_runtime')
+        self.assertEqual(output.getvalue().splitlines()[-1],
+                         '[Routing][verified][parent] model=deep; effort=high — execution runtime model and effort match the requested pair')
+        self.assertEqual(len(output.getvalue().splitlines()), 3)
+
+    def test_failed_submission_never_reports_requested_or_applied_settings(self):
+        rpc, router = self.make_router()
+        original_request = rpc.request
+        def request(method, params, timeout=60):
+            if method == 'thread/settings/update':
+                raise module.RouteError('Settings rejected')
+            return original_request(method, params, timeout)
+        output = io.StringIO()
+        with patch.object(module, 'run_turn', side_effect=self.mocked_turns(rpc, [route('deep', 'high')])) as turns, \
+             patch.object(rpc, 'request', side_effect=request), contextlib.redirect_stderr(output):
+            with self.assertRaises(module.RouteError):
+                router.execute('Task')
+        self.assertEqual(turns.call_count, 1)
+        self.assertEqual(output.getvalue().splitlines(), [
+            '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed',
+            '[Routing][error][parent] model=unknown; effort=unknown — routing or execution failed; effective runtime settings unknown'])
+
     def test_invalid_route_does_not_update_settings_or_execute_work(self):
         rpc, router = self.make_router()
         invalid = route('fast', 'medium')
@@ -256,24 +295,33 @@ class SameParentTests(unittest.TestCase):
 
     def test_runtime_mismatch_records_failure_without_retrying_work(self):
         rpc, router = self.make_router()
+        output = io.StringIO()
         with patch.object(module, 'run_turn', side_effect=self.mocked_turns(rpc, [route('deep', 'high')])) as turns, \
              patch.object(module, 'resolved_turn', return_value={'model': 'fast', 'effort': 'low'}), \
-             contextlib.redirect_stderr(io.StringIO()):
+             contextlib.redirect_stderr(output):
             with self.assertRaises(module.RouteError):
                 router.execute('Task')
         self.assertEqual(turns.call_count, 2)
         self.assertEqual(rpc.events.count('execution'), 1)
         self.assertEqual(router.record['tasks'][0]['status'], 'completed_runtime_mismatch')
+        self.assertEqual(output.getvalue().splitlines(), [
+            '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed',
+            '[Routing][requested][parent] model=deep; effort=high — Suitable for the next bounded task.',
+            '[Routing][error][parent] model=fast; effort=low — effective runtime settings differ from the requested pair; no retry'])
 
     def test_thread_metadata_alone_is_not_verified_execution_evidence(self):
         rpc, router = self.make_router()
+        output = io.StringIO()
         with patch.object(module, 'run_turn', side_effect=self.mocked_turns(rpc, [route('deep', 'high')])), \
              patch.object(module, 'resolved_turn', return_value=None), \
-             contextlib.redirect_stderr(io.StringIO()):
+             contextlib.redirect_stderr(output):
             entry = router.execute('Task')
         self.assertEqual(entry['thread_settings_after'], {'model': 'deep', 'effort': 'high'})
         self.assertEqual(entry['status'], 'completed_unverified')
         self.assertNotIn('effective', entry)
+        self.assertEqual(output.getvalue().splitlines()[-1],
+                         '[Routing][unverified][parent] model=unknown; effort=unknown — execution completed; effective runtime settings unavailable or incomplete')
+        self.assertEqual(len(output.getvalue().splitlines()), 3)
 
     def test_unknown_partial_effective_settings_are_not_called_a_verified_mismatch(self):
         rpc, router = self.make_router()

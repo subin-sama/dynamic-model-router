@@ -69,6 +69,22 @@ Global activation makes this policy part of the host's user instructions. **Actu
 
 Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](references/hosts.md) for runtime boundaries.
 
+## Visible routing receipts
+
+Normal Codex and Claude Code chats that load this skill are instructed to show a compact receipt at task start and update it for meaningful setting, scope, evidence, or outcome changes:
+
+```text
+[Routing][status][scope] model=value; effort=value — brief reason
+```
+
+Tags remain in English; the reason follows the user's language. Scope identifies `parent`, `worker:name`, or `external:name`. A worker change must not be presented as a parent change.
+
+`recommended` means proposed, `requested` means submitted, `applied` requires host acknowledgement, and `verified` requires matching runtime evidence. Inherited/no-change settings use `unchanged`; unexposed values stay `unknown`. Missing evidence or a failed outcome produces `unverified` or `error`. The skill reports the highest supported status rather than inventing a sequence of lifecycle events.
+
+These are **assistant-generated chat messages**, not a native desktop banner or guaranteed host event log. Host loading and model compliance still matter, and a receipt does not create a model-switch control. Updated installer blocks include the reporting requirement even when an older manual skill is reused. Re-run setup for managed global instruction updates; existing chats may need to reload their instructions.
+
+The optional CLI parent clients emit explicit terminal receipts before selection and after execution. They report verified, unverified, or error outcomes automatically, with Antigravity effort evidence qualified as catalog mapping. Optional `--record` (Antigravity) and `--transcript` (Codex) save their structured records; normal chat reporting does not create persistent log files.
+
 ## Standard skill-manager alternative
 
 If you want only skill files and prefer managing activation yourself:
@@ -103,7 +119,7 @@ This separate **read-only text prototype** uses native CLI flags between turns w
 
 ## Validation and development
 
-The Python components have **74 offline tests**, plus real Codex worker and same-parent routing checks. The Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The installer and launcher have additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
+The Python components have **79 offline tests**, plus real Codex worker and same-parent routing checks. The Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The installer and launcher have additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
 
 Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 

@@ -12,6 +12,8 @@ npx --yes github:subin-sama/dynamic-model-router antigravity
 
 Enter a task at each prompt; `/quit` exits. Every task uses a route-selection turn followed by an execution turn. The parent selects from the account-visible `agy models` catalog. The controller validates the exact advertised variant/effort pair and passes native `--model` and `--effort` flags for execution. Subsequent turns retain the same conversation and its history.
 
+The terminal shows `[Routing][status][parent]` receipts: an initial `unchanged` receipt with unknown current-task runtime values, the proposed `recommended` pair, then a `verified`, `unverified`, or `error` outcome. `verified` explicitly identifies model-variant evidence and catalog-mapped effort; it does not claim an independently observed effort budget.
+
 From a clone or an installed skill directory, the equivalent command is:
 
 ```bash

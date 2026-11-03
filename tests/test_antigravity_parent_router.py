@@ -321,6 +321,26 @@ class SameParentControllerTests(unittest.TestCase):
         self.assertEqual([first['status'], second['status']],
                          ['completed_unverified', 'completed_unverified'])
 
+    def test_visible_recommendation_precedes_invocation_and_unknown_runtime_stays_unverified(self):
+        router = self.make_router()
+        output = io.StringIO()
+        def invoke(command, cwd, timeout, conversation, turns):
+            if '--json-schema' in command:
+                self.assertEqual(output.getvalue().splitlines(), [
+                    '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed'])
+                return self.parsed(1, selected=route(HIGH, 'high'))
+            self.assertEqual(output.getvalue().splitlines(), [
+                '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed',
+                '[Routing][recommended][parent] model=' + HIGH + '; effort=high — Suitable for the next bounded task.'])
+            return self.parsed(2, init_model=HIGH)
+        with patch.object(module, 'run_invocation', side_effect=invoke), \
+             contextlib.redirect_stderr(output):
+            entry = router.execute('Task')
+        self.assertEqual(entry['status'], 'completed_unverified')
+        self.assertEqual(output.getvalue().splitlines()[-1],
+                         '[Routing][unverified][parent] model=unknown; effort=unknown — execution completed; effective runtime model and effort unknown')
+        self.assertEqual(len(output.getvalue().splitlines()), 3)
+
     def test_invalid_parent_selection_stops_before_native_execution(self):
         for selection in [route(LOW, 'high'), route('unavailable-model-high', 'high'),
                           dict(route(), extra='invalid')]:
@@ -376,10 +396,11 @@ class SameParentControllerTests(unittest.TestCase):
 
     def test_failed_execution_is_never_replayed_or_resumed_with_drifted_context(self):
         router = self.make_router(initial_model=LOW)
+        output = io.StringIO()
         with patch.object(module, 'run_invocation', side_effect=[
                 self.parsed(1, selected=route(HIGH, 'high')),
                 module.RouteError('Execution failed after starting')]) as invoke, \
-             contextlib.redirect_stderr(io.StringIO()):
+             contextlib.redirect_stderr(output):
             with self.assertRaises(module.RouteError):
                 router.execute('Do this once')
             with self.assertRaises(module.RouteError):
@@ -390,6 +411,9 @@ class SameParentControllerTests(unittest.TestCase):
         self.assertEqual(router.current, {'model': LOW, 'effort': 'low'})
         self.assertEqual(len(router.record['tasks']), 1)
         self.assertEqual(router.record['tasks'][0]['status'], 'failed_no_replay')
+        self.assertEqual(output.getvalue().splitlines()[-1],
+                         '[Routing][error][parent] model=unknown; effort=unknown — routing or execution failed; no replay')
+        self.assertEqual(len(output.getvalue().splitlines()), 3)
 
     def test_init_request_metadata_alone_cannot_verify_runtime_settings(self):
         router = self.make_router()
@@ -403,32 +427,41 @@ class SameParentControllerTests(unittest.TestCase):
 
     def test_fresh_runtime_model_mismatch_records_failure_without_repeating_execution(self):
         router = self.make_router()
+        output = io.StringIO()
         proof = {'status': 'mismatch', 'observed_models': [LOW]}
         with patch.object(module, 'run_invocation', side_effect=[
                 self.parsed(1, selected=route(HIGH, 'high')), self.parsed(2)]) as invoke, \
              patch.object(module, 'read_telemetry', return_value=proof), \
-             contextlib.redirect_stderr(io.StringIO()):
+             contextlib.redirect_stderr(output):
             with self.assertRaises(module.RouteError):
                 router.execute('Task')
             with self.assertRaises(module.RouteError):
                 router.execute('Task again')
         self.assertEqual(invoke.call_count, 2)
         self.assertEqual(router.record['tasks'][0]['status'], 'completed_runtime_mismatch')
+        self.assertEqual(output.getvalue().splitlines()[-1],
+                         '[Routing][error][parent] model=' + LOW + '; effort=unknown — execution runtime model differs from the requested variant; no replay')
+        self.assertNotIn('[Routing][verified]', output.getvalue())
 
     def test_verified_variant_preserves_limit_of_independent_effort_evidence(self):
         router = self.make_router()
+        output = io.StringIO()
         proof = {'status': 'verified', 'observed_models': [HIGH],
                  'effort_evidence': 'catalog_variant_mapping_only',
                  'independent_effort_field': False}
         with patch.object(module, 'run_invocation', side_effect=[
                 self.parsed(1, selected=route(HIGH, 'high')), self.parsed(2)]), \
              patch.object(module, 'read_telemetry', return_value=proof), \
-             contextlib.redirect_stderr(io.StringIO()):
+             contextlib.redirect_stderr(output):
             entry = router.execute('Task')
         self.assertEqual(entry['status'], 'completed_verified_model_variant')
         self.assertEqual(entry['effective']['model'], HIGH)
         self.assertEqual(entry['effective']['effort'], 'high')
         self.assertFalse(entry['effective']['independent_effort_field'])
+        self.assertEqual(output.getvalue().splitlines(), [
+            '[Routing][unchanged][parent] model=unknown; effort=unknown — starting task; runtime settings for this task are not yet observed',
+            '[Routing][recommended][parent] model=' + HIGH + '; effort=high — Suitable for the next bounded task.',
+            '[Routing][verified][parent] model=' + HIGH + '; effort=high — model variant verified; effort mapped from catalog'])
 
 
 @unittest.skipUnless(os.name == 'posix', 'The prototype intentionally supports POSIX only')

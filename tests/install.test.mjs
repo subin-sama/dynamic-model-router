@@ -45,6 +45,9 @@ test('fresh installation enables every task and copies only the embedded skill p
   const instructions = fs.readFileSync(f.options.adapters[0].instructionPath, 'utf8');
   assert.ok(instructions.includes(BEGIN));
   assert.ok(instructions.includes('for every task in every project'));
+  assert.ok(instructions.includes('[Routing][status][scope]'));
+  assert.ok(instructions.includes('unknown for unexposed values'));
+  assert.ok(instructions.includes('verified only for matching runtime evidence'));
   assert.ok(instructions.includes(path.join(f.shared, 'SKILL.md')));
   assert.equal(state(f.home).agents.codex.skillPath, f.shared);
 });
@@ -73,6 +76,36 @@ test('repeat installation is idempotent and does not duplicate routing or backup
   assert.equal(second.backups.length, 0);
   assert.ok(bytes(f.options.adapters[0].instructionPath).equals(before));
   assert.equal(before.toString().split(BEGIN).length - 1, 1);
+});
+
+test('upgrades an older owned instruction block while preserving manual instructions and later additions', t => {
+  const f = fixture(t);
+  const target = f.options.adapters[0].instructionPath;
+  const original = 'Original manual routing instructions\r\nKeep these user preferences';
+  write(target, original);
+  install(f.options);
+  const metadata = state(f.home);
+  const current = Buffer.from(metadata.instructions[target].block, 'base64');
+  const legacy = Buffer.from(`${BEGIN}\r\n## Automatic model and effort routing\r\n\r\nUse the installed dynamic-model-router skill for every task in every project.\r\n${END}\r\n`);
+  const file = bytes(target);
+  const start = file.indexOf(current);
+  const addition = '\r\nLater user instruction\r\n';
+  write(target, Buffer.concat([file.subarray(0, start), legacy, file.subarray(start + current.length), Buffer.from(addition)]));
+  metadata.instructions[target].block = legacy.toString('base64');
+  write(path.join(f.home, '.config/dynamic-model-router/install-state.json'), JSON.stringify(metadata, null, 2) + '\n');
+  const previous = bytes(target);
+  const upgrade = install(f.options);
+  const updated = bytes(target);
+  assert.ok(updated.subarray(0, Buffer.byteLength(original)).equals(Buffer.from(original)));
+  assert.ok(updated.includes(Buffer.from(addition)));
+  assert.ok(updated.includes(Buffer.from('[Routing][status][scope]')));
+  assert.equal(updated.toString().split(BEGIN).length - 1, 1);
+  assert.ok(bytes(upgrade.backups[0]).equals(previous));
+  assert.equal(install(f.options).changes.length, 0);
+  uninstall(f.options);
+  assert.ok(bytes(target).subarray(0, Buffer.byteLength(original)).equals(Buffer.from(original)));
+  assert.ok(bytes(target).includes(Buffer.from(addition)));
+  assert.equal(bytes(target).includes(Buffer.from(BEGIN)), false);
 });
 
 test('reuses a valid manual legacy skill without creating a duplicate or claiming ownership', t => {

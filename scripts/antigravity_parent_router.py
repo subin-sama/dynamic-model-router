@@ -19,6 +19,8 @@ import threading
 import time
 from pathlib import Path
 
+from routing_receipts import emit_receipt
+
 
 MAX_OUTPUT_BYTES = 16 * 1024 * 1024
 MAX_LINE_BYTES = 1024 * 1024
@@ -387,11 +389,24 @@ class ParentRouter:
             entry = {'task': task, 'status': 'selecting'}
             self.record['tasks'].append(entry)
             try:
+                emit_receipt('unchanged', reason='starting task; runtime settings for this task are not yet observed')
                 return self._execute(task, entry)
             except BaseException:
                 self._failed = True
                 if entry['status'] not in ('selection_runtime_mismatch', 'completed_runtime_mismatch'):
                     entry['status'] = 'failed_no_replay'
+                if entry['status'] == 'completed_runtime_mismatch':
+                    proof = entry['telemetry']
+                elif entry['status'] == 'selection_runtime_mismatch':
+                    proof = entry.get('selection', {}).get('telemetry', {})
+                else:
+                    proof = {}
+                models = proof.get('observed_models', [])
+                observed = {'model': models[0] if len(models) == 1 else None}
+                reason = {'selection_runtime_mismatch': 'selection runtime model differs from the requested variant; no execution',
+                          'completed_runtime_mismatch': 'execution runtime model differs from the requested variant; no replay'}
+                reason = reason.get(entry['status'], 'routing or execution failed; no replay')
+                emit_receipt('error', observed, reason)
                 raise
         finally:
             self._busy.release()
@@ -401,7 +416,8 @@ class ParentRouter:
             'ROUTE_SELECTION: You are the SAME parent of an explicitly authorized automatic '
             'model router. The controller resumes one conversation and applies native settings '
             'between turns. Choose model AND native effort for the NEXT execution. Return only '
-            'the route JSON, not the task answer, with one brief public reason, no chain-of-thought. '
+            'the route JSON, not the task answer, with one brief public reason in the language '
+            'of the task, no chain-of-thought. '
             'All advertised exact variant/effort pairs are eligible subject to the independent '
             'locks. No fixed model ladder is prescribed. Reassess this task using ambiguity, '
             'interacting constraints, verification difficulty, and the stated objective; reduce '
@@ -428,8 +444,7 @@ class ParentRouter:
             raise RouteError('The parent did not return valid route JSON') from error
         route = validate_route(route, self.catalog, self.model_lock, self.effort_lock)
         entry.update(selected=route, status='settings_requested')
-        print('Parent route: ' + route['model'] + ' / ' + route['effort']
-              + ' — ' + route['reason'], file=sys.stderr, flush=True)
+        emit_receipt('recommended', route, route['reason'])
         executed = self._invoke(
             'EXECUTION: Answer this task directly as read-only text. Do not spawn workers, '
             'start external model processes, write files, or change settings.\n' + task, route)
@@ -444,8 +459,11 @@ class ParentRouter:
                          effective={'model': route['model'], 'effort': route['effort'],
                                     'effort_evidence': 'catalog_variant_mapping_only',
                                     'independent_effort_field': False})
+            emit_receipt('verified', entry['effective'],
+                         'model variant verified; effort mapped from catalog')
         else:
             entry['status'] = 'completed_unverified'
+            emit_receipt('unverified', reason='execution completed; effective runtime model and effort unknown')
         self.current = {'model': route['model'], 'effort': route['effort']}
         return entry
 

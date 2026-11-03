@@ -71,8 +71,32 @@ Default to at most two upward routing changes for the same unresolved work unit,
 
 ## Communication and activation
 
-Use the user's language. Mention routing only for the initial execution mode, a meaningful change, or an unavailable capability. One short line is enough: "Investigation → stronger model / deeper native setting because two plausible fixes failed; applied to a worker."
+Emit one short, visible routing receipt at the start of each task, before substantive work. Update it when the selected pair, execution scope, evidence status, fallback, or outcome meaningfully changes. Reuse the same receipt while these stay unchanged; do not repeat it after every tool call. Use chat commentary when the host provides it, otherwise ordinary assistant text.
 
-In advisory mode: "Recommended: a stronger model with deeper reasoning. This host has no permitted switch control, so the current runtime remains in use." Do not repeat this at every phase. Do not log chain-of-thought.
+Use stable English tags with a brief reason in the user's language:
+
+```text
+[Routing][status][scope] model=value; effort=value — brief reason
+```
+
+Use `parent`, `worker:name`, or `external:name` for scope. Identify the actual execution target; a worker change is not a parent change. Include the previous pair only when it is known and useful.
+
+- `recommended`: a proposed pair, with no claim of application.
+- `requested`: settings submitted through a supported control; dispatch alone is not verification.
+- `applied`: the host acknowledges application within the reported scope.
+- `verified`: effective runtime evidence matches. Qualify partial evidence, such as a verified model variant with effort mapped from its catalog rather than an independent effort field.
+- `unchanged`: no setting change was requested; identify inherited/current settings when observable. Use `model=unknown` or `effort=unknown` for values the host does not expose. Unknown values do not establish a verified pair.
+- `unverified` or `error`: a requested outcome lacks runtime evidence, or a change/execution failed. Report the fallback and avoid a false success receipt.
+
+Emit the highest status the evidence supports, not a fabricated sequence of all lifecycle stages. A recommendation must never be presented as an applied change. If a change finishes with verification, missing evidence, or a mismatch, report that outcome visibly; do not leave only a pre-execution selection message. Never infer IDs or effort from writing style or a successful answer.
+
+In advisory mode, explain once that the recommended pair cannot be applied through this host and the current runtime remains in use. For example:
+
+```text
+[Routing][recommended][parent] model=available-model; effort=high — Complex investigation; this host has no permitted parent switch, so current settings remain in use.
+[Routing][unchanged][parent] model=unknown; effort=unknown — Inherited host settings are not exposed; no change requested.
+```
+
+These are assistant-generated chat receipts, not a native app banner or an unconditional host event log. Do not invent a receipt for an event that did not happen, log private reasoning, or create persistent log files unless requested or already configured.
 
 Automatic skill discovery is not a guaranteed always-on hook. Explicit invocation or applicable project instructions can activate this workflow; [references/hosts.md](references/hosts.md) describes host boundaries. The workflow automates selection after activation, and automates execution only where a real permitted control exists.
