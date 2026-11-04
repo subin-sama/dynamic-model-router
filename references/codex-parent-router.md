@@ -49,7 +49,9 @@ An optional transcript contains task text, route reasons, responses, turn IDs, a
 4. The execution turn starts without a new thread or manual history replay.
 5. The launcher checks the execution turn's `turn_context` for matching resolved settings. If the host omits those values, it labels the result unverified. A mismatch stops the client; it does not repeat execution.
 
-Each task costs **two turns**, including the selection turn. Selection currently uses the parent's existing settings, so choosing a light follow-up after a deep task still has routing overhead. No cost or speed improvement is promised. Unsupported settings, authorization failures, or failed execution stop the client rather than silently selecting an unrelated fallback or repeating side effects.
+Each task initially costs **two turns**, including the selection turn. With a configured local checker, a rejected answer can add at most two repair selection/execution pairs by default. Only a passing candidate is accepted; missing checks remain explicitly unavailable. Configure `--validator-command-json`, `--validator-timeout`, and `--max-repair-routes` as described in [answer validation](answer-validation.md).
+
+Selection currently uses the parent's existing settings, so choosing a light follow-up after a deep task still has routing overhead. Include failed candidates and repair turns in time/usage comparisons. No cost or speed improvement is promised. Unsupported settings, checker errors, authorization failures, or failed execution stop the client rather than silently selecting an unrelated fallback or repeating side effects.
 
 App Server is an evolving interface. Verify the installed version and account's capabilities. The local transport and cleanup are tested on macOS; POSIX process groups are cleaned up on macOS/Linux. Windows transport is not live-tested and its stdlib cleanup covers only the direct server process.
 

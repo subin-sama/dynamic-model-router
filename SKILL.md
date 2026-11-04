@@ -45,6 +45,8 @@ Map roles from current host descriptions, trustworthy capability data, user pref
 
 Choose model and effort as a pair. A fast model with greater effort and a stronger model with lighter effort can both be reasonable; effort does not create another model's capabilities. Prefer the least resource-intensive pair reasonably likely to meet acceptance criteria. With no stated objective, balance quality and responsiveness. Do not invent exact prices, speedups, or savings.
 
+Define the task's acceptance checks before choosing a lighter pair. Prefer down-routing when important requirements can be checked reliably and cheaply. A short or routine-looking task is not evidence that a lighter pair will satisfy every constraint. If a consequential requirement cannot be checked reliably, keep a pair already shown suitable for that work rather than assuming that a low setting is sufficient.
+
 Map Light/Standard/Deep/Intensive to **that model and host's supported native settings**, not a universal enum. If the host exposes `low`, `medium`, and `high`, these can provide light/standard/deep starting points. If there is no supported reasoning control, omit effort and use the default. A thinking switch, token budget, adaptive reasoning policy, and output verbosity are different controls. Never send foreign-provider effort labels or invent an `auto` value. An explicit user setting must be supported exactly; do not silently clamp it.
 
 ## Apply and check
@@ -58,6 +60,18 @@ For a worker or external run, send the goal, relevant input or exact file pointe
 Pass settings through documented arguments or supported configured agents/profiles. Use only tools actually available in this host. A successful dispatch proves a worker/run started; it does not alone prove that settings survived environment overrides or caps. Retain `requested` until the host acknowledges application, and reserve `verified` for matching effective values. A successful task result alone does not verify settings. Report inherited or omitted effort honestly.
 
 If a selection is rejected, refresh capabilities and choose a supported alternative only if constraints allow it. Do not repeat the rejected pair. State a meaningful fallback. A permission or authorization denial is a boundary, not a routing failure.
+
+## Validate before accepting an answer
+
+Check the candidate against the original acceptance criteria before treating it as complete. Prefer independent deterministic evidence when available: tests, schemas, recomputed counts or arithmetic, simulated state transitions, constraint checks, or authoritative sources for factual claims. A model's confidence, a successful response, or matching runtime settings is not an answer check. For subjective work, distinguish review against the user's criteria from an objective test; self-review alone is not independent verification.
+
+Keep answer validation separate from routing evidence: `passed`, `failed`, `error`, or `unavailable`. Do not label an unchecked answer as passed, or imply that a runtime-verified model produced a correct answer. If no reliable check is available, disclose that limit and continue appropriate review without inventing an oracle.
+
+For a checked reasoning failure, retain the original task, candidate, and precise failed-check feedback. Before another candidate, choose a supported higher native effort or a better-suited model based on that failure. A higher setting on the same model may suffice; a capability mismatch may justify another model. Do not repeat the failed pair as an escalation or treat a different model ID as proof of greater capability. Preserve model and effort locks independently. Apply changes only through controls the host exposes and permits; without one, explain the limitation and improve the answer on the current runtime without claiming a switch.
+
+Allow at most two upward routing changes and three candidate attempts for the same work unit by default, respecting stricter limits. Check every new candidate before accepting it. Stop with the failed criteria if the budget is exhausted, locks prevent an allowed repair, or no suitable supported alternative exists. Missing inputs, authorization failures, transport/runtime errors, and a broken or timed-out checker are prerequisites to resolve, not evidence to spend more effort. Do not weaken the checks after seeing a failure.
+
+Automatic regeneration is for read-only or otherwise repeat-safe computation. Never replay an external or irreversible action to repair an answer. For the optional parent clients' trusted local validator interface and bounded automatic repair, read [answer validation](references/answer-validation.md). Those clients cannot provide a universal correctness checker or grant a missing parent-switch control to an ordinary desktop chat.
 
 ## Reassess with evidence
 

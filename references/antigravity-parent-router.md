@@ -36,6 +36,8 @@ npx --yes github:subin-sama/dynamic-model-router antigravity --task "Summarize t
 
 `--model-lock MODEL_VARIANT` and `--effort-lock LEVEL` preserve explicit choices for selection and execution. Antigravity's advertised slugs identify effort variants, so an exact model-variant lock also restricts the compatible effort. Conflicting locks or starting settings fail before a model turn. Unknown catalog formats, unsupported pairs, rejected settings, context drift, and execution failures stop the controller without silently substituting settings or replaying a task.
 
+`--validator-command-json` configures a trusted local answer checker; `--validator-timeout` bounds it. A checked answer failure can trigger a new native pair and recomputation, with at most two repair-routing changes/three candidates by default (`--max-repair-routes 0..2`). Every candidate is checked before acceptance. Checker errors and exhausted/locked repair choices stop the loop. No checker means validation is unavailable, not passed. See [answer validation](answer-validation.md); include all selection, failed execution, and repair turns when comparing time or usage.
+
 ## Runtime evidence
 
 Passing flags records a **requested** pair. Successful execution or `init.model` alone does not prove effective settings. Optional `--telemetry PATH` consumes JSONL from an independently configured workspace `PreInvocation` hook. The controller does not install or modify hooks itself.

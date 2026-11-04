@@ -338,6 +338,134 @@ class SameParentTests(unittest.TestCase):
         self.assertFalse(any(method == 'thread/start' for method, _ in rpc.calls))
 
 
+class AnswerRepairTests(unittest.TestCase):
+    def make_router(self, validator, **kwargs):
+        rpc = ControllerRpc()
+        router = module.ParentRouter(rpc, 'Policy', '.', validator=validator, **kwargs)
+        rpc.events.clear()
+        return rpc, router
+
+    def turns(self, choices, answers):
+        choices, answers = iter(choices), iter(answers)
+        def run(rpc, thread, text, timeout, schema=None):
+            if schema is not None:
+                return {'turn_id': 'selection', 'text': json.dumps(next(choices))}
+            return {'turn_id': 'execution', 'text': next(answers)}
+        return run
+
+    def test_failed_small_answer_increases_effort_then_accepts_only_checked_answer(self):
+        seen = []
+        def check(task, answer):
+            seen.append(answer)
+            return {'passed': answer == 'correct', 'feedback': ['count'] if answer != 'correct' else []}
+        rpc, router = self.make_router(check)
+        with patch.object(module, 'run_turn', side_effect=self.turns([route(), route('fast', 'high')], ['wrong', 'correct'])), \
+             patch.object(module, 'resolved_turn', side_effect=[{'model':'fast','effort':'low'}, {'model':'fast','effort':'high'}]), \
+             contextlib.redirect_stderr(io.StringIO()):
+            result = router.execute('Count the records')
+        self.assertEqual(seen, ['wrong', 'correct'])
+        self.assertEqual(result['response'], 'correct')
+        self.assertTrue(result['answer_accepted'])
+        self.assertEqual([a['validation']['status'] for a in result['attempts']], ['failed','passed'])
+        self.assertEqual([p['effort'] for m,p in rpc.calls if m=='thread/settings/update'], ['low','high'])
+
+    def test_failed_answer_can_switch_models_with_feedback_and_original_task(self):
+        rpc, router = self.make_router(lambda task, answer: {'passed': answer=='correct','feedback':['sequential']})
+        prompts = []
+        runner = self.turns([route(), route('deep','high')], ['wrong','correct'])
+        def capture(*args, **kwargs):
+            prompts.append(args[2]); return runner(*args, **kwargs)
+        with patch.object(module, 'run_turn', side_effect=capture), \
+             patch.object(module, 'resolved_turn', side_effect=[{'model':'fast','effort':'low'},{'model':'deep','effort':'high'}]), \
+             contextlib.redirect_stderr(io.StringIO()):
+            result=router.execute('Original task')
+        self.assertIn('wrong', prompts[2]); self.assertIn('sequential', prompts[2])
+        self.assertIn('Original task', prompts[3]); self.assertIn('wrong', prompts[3])
+        self.assertEqual(result['selected']['model'],'deep')
+
+    def test_failed_checker_infrastructure_does_not_escalate(self):
+        def broken(*_): raise RuntimeError('private exception')
+        rpc,router=self.make_router(broken)
+        with patch.object(module,'run_turn',side_effect=self.turns([route()],['candidate'])) as turns, \
+             patch.object(module,'resolved_turn',return_value={'model':'fast','effort':'low'}), \
+             contextlib.redirect_stderr(io.StringIO()), self.assertRaises(module.RouteError):
+            router.execute('Task')
+        self.assertEqual(turns.call_count,2)
+        entry=router.record['tasks'][0]
+        self.assertEqual(entry['validation']['status'],'error'); self.assertFalse(entry['answer_accepted'])
+        self.assertNotIn('response',entry)
+
+    def test_repair_limit_rejects_answer_without_publishing_failed_candidate(self):
+        rpc,router=self.make_router(lambda *_:{'passed':False,'feedback':['wrong']},max_repair_routes=1)
+        with patch.object(module,'run_turn',side_effect=self.turns([route(),route('fast','high')],['bad1','bad2'])) as turns, \
+             patch.object(module,'resolved_turn',side_effect=[{'model':'fast','effort':'low'},{'model':'fast','effort':'high'}]), \
+             contextlib.redirect_stderr(io.StringIO()), self.assertRaises(module.RouteError):
+            router.execute('Task')
+        entry=router.record['tasks'][0]
+        self.assertEqual(turns.call_count,4); self.assertEqual(len(entry['attempts']),2)
+        self.assertEqual(entry['stop_reason'],'repair_limit_reached'); self.assertNotIn('response',entry)
+
+    def test_both_locks_block_repair_before_another_model_call(self):
+        rpc,router=self.make_router(lambda *_:{'passed':False},model_lock='fast',effort_lock='low')
+        with patch.object(module,'run_turn',side_effect=self.turns([route()],['bad'])) as turns, \
+             patch.object(module,'resolved_turn',return_value={'model':'fast','effort':'low'}), \
+             contextlib.redirect_stderr(io.StringIO()), self.assertRaises(module.RouteError):
+            router.execute('Task')
+        self.assertEqual(turns.call_count,2)
+        self.assertEqual(router.record['tasks'][0]['stop_reason'],'no_eligible_repair_pair')
+
+    def test_default_budget_has_at_most_three_checked_candidates(self):
+        rpc,router=self.make_router(lambda *_:{'passed':False,'feedback':['wrong']})
+        with patch.object(module,'run_turn',side_effect=self.turns([route(),route('fast','high'),route('deep','high')],['bad1','bad2','bad3'])) as turns, \
+             patch.object(module,'resolved_turn',side_effect=[{'model':'fast','effort':'low'},{'model':'fast','effort':'high'},{'model':'deep','effort':'high'}]), \
+             contextlib.redirect_stderr(io.StringIO()), self.assertRaises(module.RouteError):
+            router.execute('Task')
+        self.assertEqual(turns.call_count,6)
+        self.assertEqual(len(router.record['tasks'][0]['attempts']),3)
+        self.assertNotIn('response',router.record['tasks'][0])
+
+    def test_repeated_failed_pair_is_rejected_before_settings_or_execution(self):
+        rpc,router=self.make_router(lambda *_:{'passed':False})
+        with patch.object(module,'run_turn',side_effect=self.turns([route(),route()],['bad'])) as turns, \
+             patch.object(module,'resolved_turn',return_value={'model':'fast','effort':'low'}), \
+             contextlib.redirect_stderr(io.StringIO()),self.assertRaises(module.RouteError):
+            router.execute('Task')
+        self.assertEqual(turns.call_count,3)
+        self.assertEqual(sum(m=='thread/settings/update' for m,p in rpc.calls),1)
+        self.assertEqual(router.record['tasks'][0]['stop_reason'],'repair_selection_rejected')
+
+    def test_repeat_or_lower_same_model_pair_is_not_applied(self):
+        catalog=module.normalize_catalog([advertised(efforts=('low','medium','high'))])
+        for candidate in (route('fast','low'),route('fast','medium')):
+            with self.subTest(candidate=candidate),self.assertRaises(module.RouteError):
+                module.validate_repair_route(candidate,catalog,{'model':'fast','effort':'medium'},[{'model':'fast','effort':'low'},{'model':'fast','effort':'medium'}])
+        self.assertEqual(module.validate_repair_route(route('fast','high'),catalog,{'model':'fast','effort':'medium'},[{'model':'fast','effort':'medium'}])['effort'],'high')
+
+    def test_runtime_mismatch_does_not_call_checker_or_repair(self):
+        checked=[]
+        rpc,router=self.make_router(lambda *_:checked.append(True))
+        with patch.object(module,'run_turn',side_effect=self.turns([route()],['bad'])) as turns, \
+             patch.object(module,'resolved_turn',return_value={'model':'deep','effort':'high'}), \
+             contextlib.redirect_stderr(io.StringIO()),self.assertRaises(module.RouteError):
+            router.execute('Task')
+        self.assertEqual(turns.call_count,2); self.assertEqual(checked,[])
+
+    def test_no_checker_is_explicitly_unavailable_without_extra_turns(self):
+        rpc,router=self.make_router(None)
+        with patch.object(module,'run_turn',side_effect=self.turns([route()],['answer'])) as turns, \
+             patch.object(module,'resolved_turn',return_value={'model':'fast','effort':'low'}), \
+             contextlib.redirect_stderr(io.StringIO()):
+            entry=router.execute('Task')
+        self.assertEqual(turns.call_count,2); self.assertEqual(entry['response'],'answer')
+        self.assertEqual(entry['validation']['status'],'unavailable'); self.assertIsNone(entry['answer_accepted'])
+
+    def test_invalid_repair_budget_stops_before_metadata_requests(self):
+        rpc=ControllerRpc()
+        with self.assertRaises(ValueError):
+            module.ParentRouter(rpc,'Policy','.',max_repair_routes=3)
+        self.assertEqual(rpc.calls,[])
+
+
 class ResolvedTurnTests(unittest.TestCase):
     def resolve(self, rows, turn='wanted'):
         with tempfile.TemporaryDirectory() as temp:

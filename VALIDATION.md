@@ -4,15 +4,16 @@ Last checked: 2026-11-04. The repository includes a portable skill, a one-comman
 
 ## Offline tests
 
-**79 tests passed** on the development host using Python 3.9.6:
+**108 tests passed** on the development host using Python 3.9.6:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
 | Catalog inspector | 11 | Visibility, sparse native effort support, duplicate/malformed metadata, freshness, field filtering, CLI errors |
 | RPC transport | 13 | Event-before-response ordering, concurrent IDs, bounded deadlines/cleanup, safe request rejection, EOF, bounded stderr |
-| Parent client | 23 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup |
-| Antigravity parent client | 27 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, repeated-interrupt process cleanup |
+| Parent client | 34 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup, validation and bounded repair |
+| Antigravity parent client | 37 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, process cleanup, validation and bounded repair |
 | Routing receipts | 5 | Compact output, unknown values, truthful Codex and Antigravity verified/unverified/error outcomes, scope and evidence qualifiers |
+| Answer validator | 8 | Strict checker results, unavailable/error states, literal command arguments, deadlines, bounded I/O, process cleanup and repair-budget validation |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -24,7 +25,7 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 79 Python tests, the repository has **132 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
+The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 108 Python tests, the repository has **161 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
@@ -142,6 +143,24 @@ An isolated update from the actual 0.4.0 npm tarball to 0.4.1 passed for all six
 
 The user's supplied screenshot establishes that the native Antigravity card had rendered, but its presentation was rejected. Existing conversation messages and artifacts are not changed by this rollback. No new provider run is needed to validate removal of the native presentation workflow.
 
+## Answer validation and bounded repair (0.5.0)
+
+Both optional read-only parent clients now run an independent configured checker before accepting a candidate. A checked answer failure carries the original task, candidate and failed-check feedback into another permitted routing decision, with at most two routing changes and three candidates. Exact user locks, live catalog eligibility, strictly higher same-model native effort, and rejection of repeated failed pairs are enforced. A selector assesses cross-model suitability; a different ID alone is not proof of stronger reasoning.
+
+Offline tests cover automatic effort/model repair, precise feedback, unchanged acceptance criteria, exhausted budgets, locked pairs, checker errors, unavailable checks and runtime verification before answer validation. Failed checked candidates are withheld from successful final output. Command checkers have bounded I/O and a deadline; injected trusted Python callbacks must implement their own deadline. Independent cross-review found no blocking issue in either client or the shared checker.
+
+A real 0.5.0 npm tarball passed isolated installation for all six adapters, preserving mixed BOM/CRLF/non-English/no-final-newline originals and six exact backups. Both distinct installed payload roots imported the shared validation and receipt modules, and both clients exposed the checker/repair flags. Reinstall made zero changes; uninstall restored all six originals byte-for-byte and removed only the owned payloads. These checks made no provider calls.
+
+The portable policy and managed global instructions carry the same validation requirement. The development user's three configured instruction files retained every byte outside the managed block; each retained exactly one block and a repeat setup made zero changes. The pre-existing manual Codex skill retained its frontmatter and installer ownership status while its policy body and known controller code were updated. Other manual reference files were preserved.
+
+The preceding pilot without a repair gate answered one of three frozen tasks correctly with adaptive routing, versus three of three with fixed `gpt-6.1-sol` / `medium`. Adaptive routing used 78,871 reported tokens and 83.369 seconds, including selection, versus 35,105 tokens and 46.326 seconds for fixed settings. This negative result motivated the gate; it is not a benefit claim. Model/effort evidence matched for every completed turn.
+
+The new live Codex comparison used the same frozen cases/oracle, equal check/feedback/three-candidate budgets, and alternating arm order. Fixed remained `gpt-6.1-sol` / `medium`. Adaptive first-pass correctness was 2/3; it blocked two wrong extraction candidates and automatically repaired `gpt-6-luna / low` → `gpt-6-luna / medium` → `gpt-6.1-sol / medium`. Final accepted correctness was 3/3 for both arms. Fixed used 35,639 tokens and 49.730 seconds; adaptive used 136,212 tokens and 99.738 seconds, including all selectors and failed attempts. Thus the gate demonstrated recovery, while this pilot showed approximately 2.006× time and 3.822× tokens versus fixed settings. No monetary cost was measured.
+
+An independent auditor matched all 13 new native turns' settings, usage and public final answers, regraded all eight candidates and verified all 13 experiment threads were archived. The predeclared historical-error replay was correctly skipped after fresh adaptive failure. This was a separate fresh-thread pipeline using the production validator and repair guard, not an end-to-end test of the packaged same-parent client or an ordinary desktop parent switch. Global instructions were shared, so it was not a pure skill-on/off ablation. Antigravity's new repair path was tested offline only. [Sanitized results, recorded answers, frozen cases, oracle and a local regrader](https://github.com/subin-sama/dynamic-model-router/tree/main/benchmarks/2026-11-04-quality-gate) are included for review. Three synthetic cases do not establish general superiority.
+
+No universal correctness checker is supplied. Without a task-appropriate checker, the clients report validation as unavailable and preserve their prior behavior. Installing this policy does not add a model-switch control to an ordinary desktop chat.
+
 ## Independent behavioral simulation
 
 A separate agent reviewed twelve scenarios covering ordinary work, difficult debugging, user locks, unsupported settings, unavailable switching controls, existing Gemini Auto, image eligibility, missing credentials, bounded escalation, and unsafe attempts to repeat external actions or evade host restrictions. These were reasoning simulations, not runtime tests.
@@ -151,6 +170,6 @@ A separate agent reviewed twelve scenarios covering ordinary work, difficult deb
 - The parent prototype is a separate read-only text client. It does not make an existing Codex desktop chat switch automatically after skill installation, and is not a full coding client.
 - Settings apply between turns, not to a request already in flight.
 - Runtime verification establishes Codex's resolved settings, not independent provider-side backend attestation.
-- No quality, latency, or cost improvement has been measured. Parent routing adds a selection turn per task; worker overhead is not always worthwhile.
+- Routing adds selection turns and repair can add further failed attempts. A small correctness pilot does not establish general quality, latency or monetary savings; reported tokens are not a monetary-cost measurement.
 - Claude Code and Gemini CLI guidance was checked against official documentation only. Account/version/organization capabilities must be discovered on the recipient's host.
 - macOS was live-tested. POSIX process-group cleanup has an offline test; Windows cleanup covers the direct server only and has no live Windows validation.

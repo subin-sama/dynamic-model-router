@@ -69,6 +69,16 @@ Global activation makes this policy part of the host's user instructions. **Actu
 
 Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](references/hosts.md) for runtime boundaries.
 
+## Check answers before accepting them
+
+Define acceptance checks before choosing a lighter pair. The skill asks the agent to validate the candidate against the original task before treating it as complete, using independent tests or recomputation when available. It distinguishes answer validation from model/effort runtime verification and does not treat model confidence as proof.
+
+The optional Codex and Antigravity read-only parent clients support a trusted local checker. On a checked answer failure, they can automatically select a higher native effort or better-suited model, carry the failed-check feedback forward, and validate the new candidate. The default cap is two repair-routing changes and three candidates; user locks and stricter limits remain in force. Checker/infrastructure errors stop the loop, and the same external or irreversible action must never be replayed.
+
+Use `--validator-command-json` to configure the checker; without one, answer validation remains explicitly unavailable rather than being claimed as passed. See [the validator interface and repair workflow](references/answer-validation.md). Validation and extra turns have costs, so savings and improved quality must be measured rather than assumed.
+
+In a three-case live Codex pilot, the gate blocked two wrong candidates and repaired the affected task automatically. Both pipelines finished at 3/3, but adaptive routing used 2.006× time and 3.822× reported tokens versus fixed settings. See the [recorded comparison and independently regradable answers](https://github.com/subin-sama/dynamic-model-router/tree/main/benchmarks/2026-11-04-quality-gate); this small pilot does not establish general savings or accuracy superiority.
+
 ## Visible routing receipts
 
 Normal Codex and Claude Code chats that load this skill are instructed to show a compact receipt at task start and update it for meaningful setting, scope, evidence, or outcome changes:
@@ -109,7 +119,7 @@ From a repository clone or installed skill folder, with Python 3.9+ and an exist
 python3 scripts/codex_parent_router.py
 ```
 
-Enter tasks to continue one conversation; `/quit` exits. It adds one selection turn per task. See the [parent client guide](references/codex-parent-router.md).
+Enter tasks to continue one conversation; `/quit` exits. It adds one initial selection turn per task, plus bounded selection/execution repair turns when a configured checker rejects an answer. See the [parent client guide](references/codex-parent-router.md).
 
 ## Antigravity automatic parent client
 

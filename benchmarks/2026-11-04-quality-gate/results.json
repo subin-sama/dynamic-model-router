@@ -1,0 +1,933 @@
+{
+  "kind": "validator_aware_fixed_vs_adaptive_routing",
+  "date": "2026-11-04",
+  "skillVersion": "0.5.0",
+  "cliVersion": "0.166.0-alpha.5.1",
+  "baseline": {
+    "model": "gpt-6.1-sol",
+    "effort": "medium"
+  },
+  "summary": {
+    "fixed": {
+      "tasks": 3,
+      "firstPassCorrect": 3,
+      "finalAcceptedCorrect": 3,
+      "candidates": 3,
+      "modelTurns": 3,
+      "taskElapsedSeconds": 49.73,
+      "usage": {
+        "inputTokens": 34437,
+        "cachedInputTokens": 26880,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 1202,
+        "reasoningOutputTokens": 984,
+        "totalTokens": 35639
+      }
+    },
+    "routed": {
+      "tasks": 3,
+      "firstPassCorrect": 2,
+      "finalAcceptedCorrect": 3,
+      "candidates": 5,
+      "modelTurns": 10,
+      "taskElapsedSeconds": 99.738,
+      "usage": {
+        "inputTokens": 134395,
+        "cachedInputTokens": 43520,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 1817,
+        "reasoningOutputTokens": 1112,
+        "totalTokens": 136212
+      }
+    }
+  },
+  "ratios": {
+    "routedToFixedTime": 2.005590187009853,
+    "routedToFixedReportedTokens": 3.821992760739639
+  },
+  "results": [
+    {
+      "caseId": "extract_ids",
+      "category": "easy_extraction",
+      "arm": "fixed",
+      "accepted": true,
+      "firstPassCorrect": true,
+      "status": "completed_accepted",
+      "initialExecutionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "executionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "candidateCount": 1,
+      "repairSelections": 0,
+      "taskElapsedSeconds": 8.015,
+      "totalUsage": {
+        "inputTokens": 11634,
+        "cachedInputTokens": 8960,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 127,
+        "reasoningOutputTokens": 64,
+        "totalTokens": 11761
+      },
+      "allRuntimeVerified": true,
+      "usageComplete": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "pair": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "response": "{\"ids\":[\"RX-000\",\"RX-001\",\"RX-003\",\"RX-004\",\"RX-008\",\"RX-012\",\"RX-021\"],\"valid_rows\":10,\"rejected_rows\":[2,4,9,12,13,15,16,17]}",
+          "validation": {
+            "status": "passed",
+            "feedback": []
+          },
+          "grade": {
+            "passed": true,
+            "checks": {
+              "shape": true,
+              "ids": true,
+              "valid_rows": true,
+              "rejected_rows": true
+            },
+            "details": {
+              "expected": {
+                "ids": [
+                  "RX-000",
+                  "RX-001",
+                  "RX-003",
+                  "RX-004",
+                  "RX-008",
+                  "RX-012",
+                  "RX-021"
+                ],
+                "valid_rows": 10,
+                "rejected_rows": [
+                  2,
+                  4,
+                  9,
+                  12,
+                  13,
+                  15,
+                  16,
+                  17
+                ]
+              }
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        }
+      ],
+      "turns": [
+        {
+          "phase": "execution",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11634,
+            "cachedInputTokens": 8960,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 127,
+            "reasoningOutputTokens": 64,
+            "totalTokens": 11761
+          },
+          "wallSeconds": 7.785,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        }
+      ]
+    },
+    {
+      "caseId": "extract_ids",
+      "category": "easy_extraction",
+      "arm": "routed",
+      "accepted": true,
+      "firstPassCorrect": false,
+      "status": "completed_accepted",
+      "initialExecutionPair": {
+        "model": "gpt-6-luna",
+        "effort": "low"
+      },
+      "executionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "candidateCount": 3,
+      "repairSelections": 2,
+      "taskElapsedSeconds": 37.013,
+      "totalUsage": {
+        "inputTokens": 80929,
+        "cachedInputTokens": 25600,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 515,
+        "reasoningOutputTokens": 139,
+        "totalTokens": 81444
+      },
+      "allRuntimeVerified": true,
+      "usageComplete": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "pair": {
+            "model": "gpt-6-luna",
+            "effort": "low"
+          },
+          "response": "{\"ids\":[\"RX-000\",\"RX-001\",\"RX-003\",\"RX-004\",\"RX-008\",\"RX-012\",\"RX-021\"],\"valid_rows\":9,\"rejected_rows\":[2,4,9,12,13,15,16,17]}",
+          "validation": {
+            "status": "failed",
+            "feedback": [
+              "valid_rows"
+            ]
+          },
+          "grade": {
+            "passed": false,
+            "checks": {
+              "shape": true,
+              "ids": true,
+              "valid_rows": false,
+              "rejected_rows": true
+            },
+            "details": {
+              "expected": {
+                "ids": [
+                  "RX-000",
+                  "RX-001",
+                  "RX-003",
+                  "RX-004",
+                  "RX-008",
+                  "RX-012",
+                  "RX-021"
+                ],
+                "valid_rows": 10,
+                "rejected_rows": [
+                  2,
+                  4,
+                  9,
+                  12,
+                  13,
+                  15,
+                  16,
+                  17
+                ]
+              }
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        },
+        {
+          "attempt": 2,
+          "pair": {
+            "model": "gpt-6-luna",
+            "effort": "medium"
+          },
+          "response": "{\"ids\":[\"RX-000\",\"RX-001\",\"RX-003\",\"RX-004\",\"RX-008\",\"RX-012\",\"RX-021\"],\"valid_rows\":8,\"rejected_rows\":[2,4,9,12,13,15,16,17]}",
+          "validation": {
+            "status": "failed",
+            "feedback": [
+              "valid_rows"
+            ]
+          },
+          "grade": {
+            "passed": false,
+            "checks": {
+              "shape": true,
+              "ids": true,
+              "valid_rows": false,
+              "rejected_rows": true
+            },
+            "details": {
+              "expected": {
+                "ids": [
+                  "RX-000",
+                  "RX-001",
+                  "RX-003",
+                  "RX-004",
+                  "RX-008",
+                  "RX-012",
+                  "RX-021"
+                ],
+                "valid_rows": 10,
+                "rejected_rows": [
+                  2,
+                  4,
+                  9,
+                  12,
+                  13,
+                  15,
+                  16,
+                  17
+                ]
+              }
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        },
+        {
+          "attempt": 3,
+          "pair": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "response": "{\"ids\":[\"RX-000\",\"RX-001\",\"RX-003\",\"RX-004\",\"RX-008\",\"RX-012\",\"RX-021\"],\"valid_rows\":10,\"rejected_rows\":[2,4,9,12,13,15,16,17]}",
+          "validation": {
+            "status": "passed",
+            "feedback": []
+          },
+          "grade": {
+            "passed": true,
+            "checks": {
+              "shape": true,
+              "ids": true,
+              "valid_rows": true,
+              "rejected_rows": true
+            },
+            "details": {
+              "expected": {
+                "ids": [
+                  "RX-000",
+                  "RX-001",
+                  "RX-003",
+                  "RX-004",
+                  "RX-008",
+                  "RX-012",
+                  "RX-021"
+                ],
+                "valid_rows": 10,
+                "rejected_rows": [
+                  2,
+                  4,
+                  9,
+                  12,
+                  13,
+                  15,
+                  16,
+                  17
+                ]
+              }
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        }
+      ],
+      "turns": [
+        {
+          "phase": "selection",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 15669,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 103,
+            "reasoningOutputTokens": 38,
+            "totalTokens": 15772
+          },
+          "wallSeconds": 6.201,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "execution",
+          "requested": {
+            "model": "gpt-6-luna",
+            "effort": "low"
+          },
+          "effective": {
+            "model": "gpt-6-luna",
+            "effort": "low"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 10943,
+            "cachedInputTokens": 8320,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 61,
+            "reasoningOutputTokens": 0,
+            "totalTokens": 11004
+          },
+          "wallSeconds": 3.804,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "repair_selection",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 15754,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 77,
+            "reasoningOutputTokens": 18,
+            "totalTokens": 15831
+          },
+          "wallSeconds": 8.904,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "repair_execution",
+          "requested": {
+            "model": "gpt-6-luna",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6-luna",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11050,
+            "cachedInputTokens": 8320,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 61,
+            "reasoningOutputTokens": 0,
+            "totalTokens": 11111
+          },
+          "wallSeconds": 4.258,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "repair_selection",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 15772,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 109,
+            "reasoningOutputTokens": 42,
+            "totalTokens": 15881
+          },
+          "wallSeconds": 7.655,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "repair_execution",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11741,
+            "cachedInputTokens": 8960,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 104,
+            "reasoningOutputTokens": 41,
+            "totalTokens": 11845
+          },
+          "wallSeconds": 6.041,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        }
+      ]
+    },
+    {
+      "caseId": "inventory_race",
+      "category": "medium_bug_reasoning",
+      "arm": "routed",
+      "accepted": true,
+      "firstPassCorrect": true,
+      "status": "completed_accepted",
+      "initialExecutionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "low"
+      },
+      "executionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "low"
+      },
+      "candidateCount": 1,
+      "repairSelections": 0,
+      "taskElapsedSeconds": 14.564,
+      "totalUsage": {
+        "inputTokens": 26747,
+        "cachedInputTokens": 8960,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 199,
+        "reasoningOutputTokens": 62,
+        "totalTokens": 26946
+      },
+      "allRuntimeVerified": true,
+      "usageComplete": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "pair": {
+            "model": "gpt-6.1-sol",
+            "effort": "low"
+          },
+          "response": "{\"interleaving\":[\"A.read\",\"B.read\",\"A.check\",\"B.check\",\"A.write\",\"B.write\"],\"final_stock\":2,\"successful_reservations\":2,\"oversell_amount\":2,\"safe_fix\":\"whole-function-lock\",\"atomic_sequential\":{\"results\":[true,false,true],\"final_stock\":3}}",
+          "validation": {
+            "status": "passed",
+            "feedback": []
+          },
+          "grade": {
+            "passed": true,
+            "checks": {
+              "shape": true,
+              "all_events_once": true,
+              "program_order_and_legal_writes": true,
+              "demonstrates_oversell": true,
+              "final_stock": true,
+              "successful_reservations": true,
+              "oversell_amount": true,
+              "safe_fix": true,
+              "atomic_sequential": true
+            },
+            "details": {
+              "simulated_final_stock": 2,
+              "simulated_successes": 2,
+              "correct_fix": "whole-function-lock"
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        }
+      ],
+      "turns": [
+        {
+          "phase": "selection",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 15341,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 131,
+            "reasoningOutputTokens": 62,
+            "totalTokens": 15472
+          },
+          "wallSeconds": 9.041,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "execution",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "low"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "low"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11406,
+            "cachedInputTokens": 8960,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 68,
+            "reasoningOutputTokens": 0,
+            "totalTokens": 11474
+          },
+          "wallSeconds": 5.485,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        }
+      ]
+    },
+    {
+      "caseId": "inventory_race",
+      "category": "medium_bug_reasoning",
+      "arm": "fixed",
+      "accepted": true,
+      "firstPassCorrect": true,
+      "status": "completed_accepted",
+      "initialExecutionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "executionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "candidateCount": 1,
+      "repairSelections": 0,
+      "taskElapsedSeconds": 6.035,
+      "totalUsage": {
+        "inputTokens": 11406,
+        "cachedInputTokens": 8960,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 112,
+        "reasoningOutputTokens": 42,
+        "totalTokens": 11518
+      },
+      "allRuntimeVerified": true,
+      "usageComplete": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "pair": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "response": "{\"interleaving\":[\"A.read\",\"B.read\",\"A.check\",\"B.check\",\"A.write\",\"B.write\"],\"final_stock\":2,\"successful_reservations\":2,\"oversell_amount\":2,\"safe_fix\":\"whole-function-lock\",\"atomic_sequential\":{\"results\":[true,false,true],\"final_stock\":3}}",
+          "validation": {
+            "status": "passed",
+            "feedback": []
+          },
+          "grade": {
+            "passed": true,
+            "checks": {
+              "shape": true,
+              "all_events_once": true,
+              "program_order_and_legal_writes": true,
+              "demonstrates_oversell": true,
+              "final_stock": true,
+              "successful_reservations": true,
+              "oversell_amount": true,
+              "safe_fix": true,
+              "atomic_sequential": true
+            },
+            "details": {
+              "simulated_final_stock": 2,
+              "simulated_successes": 2,
+              "correct_fix": "whole-function-lock"
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        }
+      ],
+      "turns": [
+        {
+          "phase": "execution",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11406,
+            "cachedInputTokens": 8960,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 112,
+            "reasoningOutputTokens": 42,
+            "totalTokens": 11518
+          },
+          "wallSeconds": 6.015,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        }
+      ]
+    },
+    {
+      "caseId": "constrained_schedule",
+      "category": "hard_interacting_constraints",
+      "arm": "fixed",
+      "accepted": true,
+      "firstPassCorrect": true,
+      "status": "completed_accepted",
+      "initialExecutionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "executionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "candidateCount": 1,
+      "repairSelections": 0,
+      "taskElapsedSeconds": 35.68,
+      "totalUsage": {
+        "inputTokens": 11397,
+        "cachedInputTokens": 8960,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 963,
+        "reasoningOutputTokens": 878,
+        "totalTokens": 12360
+      },
+      "allRuntimeVerified": true,
+      "usageComplete": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "pair": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "response": "{\"schedule\":[{\"job\":\"A\",\"start\":0},{\"job\":\"B\",\"start\":0},{\"job\":\"D\",\"start\":2},{\"job\":\"E\",\"start\":2},{\"job\":\"C\",\"start\":3},{\"job\":\"H\",\"start\":4},{\"job\":\"K\",\"start\":5},{\"job\":\"L\",\"start\":5}],\"total_value\":37,\"makespan\":6}",
+          "validation": {
+            "status": "passed",
+            "feedback": []
+          },
+          "grade": {
+            "passed": true,
+            "checks": {
+              "shape": true,
+              "schedule_rows": true,
+              "no_duplicate_jobs": true,
+              "fixed_roots": true,
+              "horizon": true,
+              "dependencies": true,
+              "exclusive_resources": true,
+              "reported_value": true,
+              "reported_makespan": true,
+              "globally_optimal": true
+            },
+            "details": {
+              "feasible": true,
+              "actual_value": 37,
+              "optimal_value": 37,
+              "oracle_states_explored": 209
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        }
+      ],
+      "turns": [
+        {
+          "phase": "execution",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11397,
+            "cachedInputTokens": 8960,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 963,
+            "reasoningOutputTokens": 878,
+            "totalTokens": 12360
+          },
+          "wallSeconds": 35.658,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        }
+      ]
+    },
+    {
+      "caseId": "constrained_schedule",
+      "category": "hard_interacting_constraints",
+      "arm": "routed",
+      "accepted": true,
+      "firstPassCorrect": true,
+      "status": "completed_accepted",
+      "initialExecutionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "executionPair": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "candidateCount": 1,
+      "repairSelections": 0,
+      "taskElapsedSeconds": 48.161,
+      "totalUsage": {
+        "inputTokens": 26719,
+        "cachedInputTokens": 8960,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 1103,
+        "reasoningOutputTokens": 911,
+        "totalTokens": 27822
+      },
+      "allRuntimeVerified": true,
+      "usageComplete": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "pair": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "response": "{\"schedule\":[{\"job\":\"A\",\"start\":0},{\"job\":\"B\",\"start\":0},{\"job\":\"C\",\"start\":2},{\"job\":\"D\",\"start\":2},{\"job\":\"E\",\"start\":4},{\"job\":\"L\",\"start\":4},{\"job\":\"K\",\"start\":5},{\"job\":\"H\",\"start\":5}],\"total_value\":37,\"makespan\":6}",
+          "validation": {
+            "status": "passed",
+            "feedback": []
+          },
+          "grade": {
+            "passed": true,
+            "checks": {
+              "shape": true,
+              "schedule_rows": true,
+              "no_duplicate_jobs": true,
+              "fixed_roots": true,
+              "horizon": true,
+              "dependencies": true,
+              "exclusive_resources": true,
+              "reported_value": true,
+              "reported_makespan": true,
+              "globally_optimal": true
+            },
+            "details": {
+              "feasible": true,
+              "actual_value": 37,
+              "optimal_value": 37,
+              "oracle_states_explored": 209
+            },
+            "json_only": true
+          },
+          "runtimeVerified": true
+        }
+      ],
+      "turns": [
+        {
+          "phase": "selection",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 15322,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 200,
+            "reasoningOutputTokens": 93,
+            "totalTokens": 15522
+          },
+          "wallSeconds": 11.137,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        },
+        {
+          "phase": "execution",
+          "requested": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "effective": {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          },
+          "runtimeVerified": true,
+          "usage": {
+            "inputTokens": 11397,
+            "cachedInputTokens": 8960,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 903,
+            "reasoningOutputTokens": 818,
+            "totalTokens": 12300
+          },
+          "wallSeconds": 36.981,
+          "usageSource": "thread/tokenUsage/updated.total_fresh_thread"
+        }
+      ]
+    }
+  ],
+  "modelTurns": 13,
+  "independentAudit": {
+    "passed": true,
+    "runtimeUsageAndFinalAnswersMatched": 13,
+    "candidateAnswersRegraded": 8,
+    "ownedThreadsArchived": 13,
+    "failedCandidatesAccepted": 0
+  },
+  "replayProbe": {
+    "predeclared": true,
+    "condition": "Only if no primary adaptive candidate failed.",
+    "status": "skipped_fresh_adaptive_failure_observed",
+    "modelTurns": 0,
+    "includedInPrimaryComparison": false
+  },
+  "protocol": {
+    "caseOrder": [
+      "extract_ids",
+      "inventory_race",
+      "constrained_schedule"
+    ],
+    "armOrder": [
+      [
+        "fixed",
+        "routed"
+      ],
+      [
+        "routed",
+        "fixed"
+      ],
+      [
+        "fixed",
+        "routed"
+      ]
+    ],
+    "maxCandidatesPerArm": 3,
+    "maxRepairSelectionsPerAdaptiveArm": 2,
+    "maximumModelTurns": 27,
+    "perArmDeadlineSeconds": 300,
+    "perTurnDeadlineSeconds": 120,
+    "correctnessFeedback": "Failed check names only; no expected values or golden answer.",
+    "fixedRepairPolicy": "Keep the exact fixed model/effort and recompute with the same failed-check-name feedback.",
+    "adaptiveRepairPolicy": "Choose a supported higher same-model effort or better-suited model; enforce production repair-route guard, locks and no repeated pair.",
+    "sources": {
+      "cases.json": "5aeb3633648ff50f3e111659ce6f1ed92e305e147c47cacfee0870e6736e5e96",
+      "score_outputs.py": "fcb4bc2d1e7f43ac96948e3c48f80da7a0b9ce6452250e39592e599d2c719025",
+      "run_quality_benchmark.py": "9c56f7b248eab42aa1f37f076b9dbf50a2e47fbb0986a98d6b495767a04f5188",
+      "benchmark_transport.py": "c740b3002db4a1d869a25a71c0d32deed8b8627b2867d1cc18b850cce9db9280",
+      "SKILL.md": "2c9a7d8edf3e946ca9d859122d27ad8628441fff10b2240626f555319d71fcfb",
+      "answer_validation.py": "3c88da1eedeb4c456d2f72d0812ece6e1a8affd7457036292df2e2ed0f2d9fc8",
+      "codex_parent_router.py": "6597b6006e6d6e3ca7700544cd8eebd9feb5acf56ec903672a940605eb8a55d1"
+    },
+    "globalInstructionsShared": true,
+    "globalInstructionsExcluded": false,
+    "freshIndependentExecutionThreads": true,
+    "selectorReasoningForwardedToExecution": false,
+    "pureSkillAblation": false,
+    "monetaryCostMeasured": false,
+    "scope": "Separate bounded App Server experiment; not ordinary desktop parent switching or the packaged same-parent client."
+  },
+  "limitations": [
+    "Three synthetic regression cases, one run per arm; descriptive only.",
+    "Same global AGENTS guidance is active in both arms; not a skill-disabled control.",
+    "Fresh execution threads use identical instructions; selectors pass a pair, not private reasoning.",
+    "Both arms use the same production validator and failed-check-name feedback, with at most three candidates.",
+    "Fixed repairs stay at the baseline pair; adaptive repair selections must pass the production route guard.",
+    "All failed and accepted candidates plus every selection turn count toward time and token totals.",
+    "Timing includes thread creation, runtime inspection, checker/grader and about0.4s usage drain per turn; archival and shared startup excluded.",
+    "Reported tokens are not money or subscription credits; cached and reasoning subsets are not counted twice.",
+    "This separate App Server test does not establish automatic switching in an already-open desktop chat."
+  ]
+}

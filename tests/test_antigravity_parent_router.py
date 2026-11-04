@@ -463,6 +463,163 @@ class SameParentControllerTests(unittest.TestCase):
             '[Routing][recommended][parent] model=' + HIGH + '; effort=high — Suitable for the next bounded task.',
             '[Routing][verified][parent] model=' + HIGH + '; effort=high — model variant verified; effort mapped from catalog'])
 
+    def test_answer_failure_selects_higher_native_variant_and_accepts_only_checked_repair(self):
+        checks = []
+        def checker(task, answer):
+            checks.append((task, answer))
+            return {'passed': answer == 'correct', 'feedback': ['count_invariant']}
+        router = self.make_router(validator=checker)
+        responses = [self.parsed(1, selected=route()), self.parsed(2, response='wrong'),
+                     self.parsed(3, selected=route(HIGH, 'high')),
+                     self.parsed(4, response='correct')]
+        with patch.object(module, 'run_invocation', side_effect=responses) as invoke, \
+             contextlib.redirect_stderr(io.StringIO()):
+            entry = router.execute('Original counting task')
+        self.assertEqual(invoke.call_count, 4)
+        self.assertEqual(checks, [('Original counting task', 'wrong'),
+                                  ('Original counting task', 'correct')])
+        self.assertEqual(entry['response'], 'correct')
+        self.assertTrue(entry['answer_accepted'])
+        self.assertEqual(entry['validation']['status'], 'passed')
+        self.assertEqual([a['validation']['status'] for a in entry['attempts']], ['failed', 'passed'])
+        self.assertEqual([a['selected']['model'] for a in entry['attempts']], [LOW, HIGH])
+        self.assertEqual(router.current, {'model': HIGH, 'effort': 'high'})
+        repair_prompt = self.option(invoke.call_args_list[2].args[0], '-p')
+        self.assertIn('ANSWER_REPAIR', repair_prompt)
+        self.assertIn('Original counting task', repair_prompt)
+        self.assertIn('wrong', repair_prompt)
+        self.assertIn('count_invariant', repair_prompt)
+        self.assertEqual([call.args[3:] for call in invoke.call_args_list],
+                         [(None, None), ('same-parent', 1), ('same-parent', 2), ('same-parent', 3)])
+
+    def test_runtime_verification_never_overrides_a_failed_answer_check(self):
+        router = self.make_router(validator=lambda task, answer: {'passed': False},
+                                  max_repair_routes=0)
+        proof = {'status': 'verified', 'observed_models': [LOW],
+                 'effort_evidence': 'catalog_variant_mapping_only',
+                 'independent_effort_field': False}
+        output = io.StringIO()
+        with patch.object(module, 'run_invocation', side_effect=[
+                self.parsed(1, selected=route()), self.parsed(2, response='wrong')]) as invoke, \
+             patch.object(module, 'read_telemetry', return_value=proof), \
+             contextlib.redirect_stderr(output):
+            with self.assertRaises(module.RouteError):
+                router.execute('Task')
+        entry = router.record['tasks'][0]
+        self.assertEqual(invoke.call_count, 2)
+        self.assertEqual(entry['status'], 'answer_validation_exhausted')
+        self.assertFalse(entry['answer_accepted'])
+        self.assertNotIn('response', entry)
+        self.assertEqual(entry['validation']['status'], 'failed')
+        self.assertEqual(entry['attempts'][0]['runtime_status'], 'completed_verified_model_variant')
+        self.assertNotIn('[Routing][verified]', output.getvalue())
+
+    def test_checker_exception_and_malformed_result_stop_without_model_escalation(self):
+        def exploding(task, answer):
+            raise RuntimeError('PRIVATE_CHECKER_ERROR')
+        for checker in (exploding, lambda task, answer: {'passed': 'yes'}):
+            with self.subTest(checker=checker):
+                router = self.make_router(validator=checker)
+                output = io.StringIO()
+                with patch.object(module, 'run_invocation', side_effect=[
+                        self.parsed(1, selected=route()), self.parsed(2)]) as invoke, \
+                     contextlib.redirect_stderr(output):
+                    with self.assertRaises(module.RouteError) as caught:
+                        router.execute('Task')
+                self.assertEqual(invoke.call_count, 2)
+                entry = router.record['tasks'][0]
+                self.assertEqual(entry['status'], 'answer_validation_error')
+                self.assertEqual(entry['validation']['status'], 'error')
+                self.assertFalse(entry['answer_accepted'])
+                self.assertNotIn('response', entry)
+                self.assertNotIn('PRIVATE_CHECKER_ERROR', str(caught.exception) + output.getvalue())
+
+    def test_failed_pair_cannot_be_selected_again_as_a_repair(self):
+        router = self.make_router(validator=lambda task, answer: {'passed': False})
+        with patch.object(module, 'run_invocation', side_effect=[
+                self.parsed(1, selected=route()), self.parsed(2),
+                self.parsed(3, selected=route())]) as invoke, \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(module.RouteError):
+                router.execute('Task')
+        self.assertEqual(invoke.call_count, 3)
+        entry = router.record['tasks'][0]
+        self.assertEqual(entry['status'], 'answer_repair_blocked')
+        self.assertEqual(len(entry['attempts']), 1)
+        self.assertFalse(entry['answer_accepted'])
+
+    def test_exact_locks_can_block_repair_without_another_selection_turn(self):
+        router = self.make_router(model_lock=LOW, effort_lock='low',
+                                  validator=lambda task, answer: {'passed': False})
+        with patch.object(module, 'run_invocation', side_effect=[
+                self.parsed(1, selected=route()), self.parsed(2)]) as invoke, \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(module.RouteError):
+                router.execute('Task')
+        self.assertEqual(invoke.call_count, 2)
+        self.assertEqual(router.record['tasks'][0]['status'], 'answer_repair_blocked')
+        self.assertEqual(router.current, {'model': LOW, 'effort': 'low'})
+
+    def test_repair_budget_exhaustion_retains_three_failed_candidates_without_acceptance(self):
+        router = self.make_router(validator=lambda task, answer: {'passed': False})
+        with patch.object(module, 'run_invocation', side_effect=[
+                self.parsed(1, selected=route()), self.parsed(2, response='bad one'),
+                self.parsed(3, selected=route(HIGH, 'high')), self.parsed(4, response='bad two'),
+                self.parsed(5, selected=route(SPARSE, 'medium')), self.parsed(6, response='bad three')]) as invoke, \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(module.RouteError):
+                router.execute('Task')
+        entry = router.record['tasks'][0]
+        self.assertEqual(invoke.call_count, 6)
+        self.assertEqual(entry['status'], 'answer_validation_exhausted')
+        self.assertEqual([a['response'] for a in entry['attempts']], ['bad one', 'bad two', 'bad three'])
+        self.assertFalse(entry['answer_accepted'])
+        self.assertNotIn('response', entry)
+
+    def test_unavailable_checker_is_reported_without_claiming_answer_acceptance(self):
+        router = self.make_router()
+        with patch.object(module, 'run_invocation', side_effect=[
+                self.parsed(1, selected=route()), self.parsed(2)]) as invoke, \
+             contextlib.redirect_stderr(io.StringIO()):
+            entry = router.execute('Task')
+        self.assertEqual(invoke.call_count, 2)
+        self.assertEqual(entry['validation']['status'], 'unavailable')
+        self.assertIsNone(entry['answer_accepted'])
+        self.assertEqual(entry['response'], 'Work completed')
+
+    def test_invalid_repair_budget_is_rejected_before_querying_native_catalog(self):
+        for limit in (-1, 3, True, .5):
+            with self.subTest(limit=limit), patch.object(module, '_process') as catalog:
+                with self.assertRaises(module.RouteError):
+                    module.ParentRouter('offline-agy', 'Policy', '.', max_repair_routes=limit)
+            catalog.assert_not_called()
+        with patch.object(module, '_process') as catalog:
+            with self.assertRaises(module.RouteError):
+                module.ParentRouter('offline-agy', 'Policy', '.', validator={'passed': True})
+        catalog.assert_not_called()
+
+    def test_same_family_repair_requires_increasing_native_effort(self):
+        catalog = module.normalize_catalog(CATALOG_TEXT)
+        with self.assertRaises(module.RouteError):
+            module.validate_repair_route(route(), catalog,
+                                         {'model': HIGH, 'effort': 'high'}, {(HIGH, 'high')})
+        self.assertEqual(module.validate_repair_route(route(HIGH, 'high'), catalog,
+                         {'model': LOW, 'effort': 'low'}, {(LOW, 'low')})['model'], HIGH)
+
+    def test_runtime_mismatch_prevents_answer_checker_and_repair(self):
+        checker_calls = []
+        router = self.make_router(validator=lambda task, answer: checker_calls.append(answer))
+        proof = {'status': 'mismatch', 'observed_models': [HIGH]}
+        with patch.object(module, 'run_invocation', side_effect=[
+                self.parsed(1, selected=route()), self.parsed(2)]) as invoke, \
+             patch.object(module, 'read_telemetry', return_value=proof), \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(module.RouteError):
+                router.execute('Task')
+        self.assertEqual(invoke.call_count, 2)
+        self.assertEqual(checker_calls, [])
+        self.assertEqual(router.record['tasks'][0]['status'], 'completed_runtime_mismatch')
+
 
 @unittest.skipUnless(os.name == 'posix', 'The prototype intentionally supports POSIX only')
 class OfflineCliIntegrationTests(unittest.TestCase):

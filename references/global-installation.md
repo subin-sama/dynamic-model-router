@@ -6,6 +6,8 @@ The managed block also requests a compact Markdown blockquote at task start and 
 
 The 0.4.1 managed block explicitly supersedes earlier native-card preferences with compact text. Routing HTML cards, generative UI artifacts, panels, and animation are disabled by default. Re-running setup prunes unchanged installer-owned renderer files removed from the payload; changed owned files still stop the operation for preservation. Existing conversation cards are historical messages and are not removed by installation updates.
 
+Version 0.5.0 adds a concise validation-before-acceptance summary to the same managed block. Checked reasoning failures can request bounded supported effort/model repair, while answer validation stays separate from runtime settings. It preserves model/effort locks, stops checker/infrastructure errors, and forbids replaying external or irreversible actions. This policy requests checks appropriate to the task; the optional parent clients need a configured trusted checker for automatic deterministic gating. It does not create a universal checker or a missing host control.
+
 ## Targets
 
 | Agent ID | Instruction root and file | Skill candidates |
