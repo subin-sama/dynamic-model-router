@@ -1,6 +1,6 @@
 {
   "name": "dynamic-model-router",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Install a portable model and reasoning-effort routing skill with preserved global instructions.",
   "license": "MIT",
   "repository": {
@@ -24,8 +24,7 @@
     "VALIDATION.md",
     "agents/",
     "references/",
-    "scripts/",
-    "assets/"
+    "scripts/"
   ],
   "scripts": {
     "test": "node --test tests/*.test.mjs"

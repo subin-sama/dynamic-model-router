@@ -4,7 +4,7 @@ Last checked: 2026-11-04. The repository includes a portable skill, a one-comman
 
 ## Offline tests
 
-**91 tests passed** on the development host using Python 3.9.6:
+**79 tests passed** on the development host using Python 3.9.6:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
@@ -13,7 +13,6 @@ Last checked: 2026-11-04. The repository includes a portable skill, a one-comman
 | Parent client | 23 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup |
 | Antigravity parent client | 27 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, repeated-interrupt process cleanup |
 | Routing receipts | 5 | Compact output, unknown values, truthful Codex and Antigravity verified/unverified/error outcomes, scope and evidence qualifiers |
-| Native receipt renderer | 12 | Escaping and injection boundaries, strict schema and duplicate keys, exact settings, unknown/partial evidence, immutable snapshots, native HTML references, filenames, input limits, local-only resources |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -25,11 +24,11 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 91 Python tests, the repository has **144 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation. The embedded payload check includes the native HTML template.
+The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 79 Python tests, the repository has **132 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
-Documentation, installer output, and default UI labels are in English. Tests include localized data to exercise Unicode and label overrides. The installer intentionally preserves non-English user instructions. No credentials, personal profile files, or raw runtime session identifiers are included in the npm payload.
+The distribution is English-only, including documentation, installer output, and test fixtures. The installer intentionally preserves non-English user instructions. No credentials, personal profile files, or raw runtime session identifiers are included in the npm payload.
 
 Installation support is verified for the six documented adapters. Antigravity uses the officially documented common App/CLI/IDE paths, but global policy loading in each running surface has not been live-tested. The separate CLI runtime test below used workspace activation. Setup detects competing same-name CLI/legacy skills before writing and preserves unresolved manual copies. It configures user-wide context; it cannot force model compliance, override managed restrictions, or install a global hook into arbitrary closed AI products. Native model/effort behavior remains separately bounded below.
 
@@ -135,19 +134,13 @@ The chat policy and installer summary now pair each textual status with a colore
 
 All 132 offline checks and skill structural validation passed. An independent review found no evidence-status regressions. This presentation-only update did not repeat provider runs; the normal-chat compliance limitation recorded for 0.3.2 still applies. Host emoji rendering may vary, so no identical appearance across apps is claimed.
 
-### Native inline receipts (0.4.0)
+### Text presentation restored (0.4.1)
 
-The installed first-party Codex visualization skill establishes a sandboxed inline HTML-fragment workflow with final-response references. The installed Antigravity App is now 2.29.0 and contains its native `generative_ui` skill; current official documentation supports compact inline HTML/CSS/JavaScript artifacts. This is newer renderer evidence than the earlier App 2.3.1 model-switch assessment. Neither rendering path establishes a model-switch control. The standalone Antigravity IDE's native transcript renderer remains unproven.
+At the user's request, the 0.4.0 native HTML receipt feature was reverted to the compact colored Markdown presentation. The skill and managed instruction block explicitly supersede earlier native-card preferences. The renderer, template, and native receipt recipe are no longer distributed. Model/effort selection, terminal receipts, and runtime-evidence rules are unchanged.
 
-The new renderer, template, and native workflow recipe passed an independent review and all 144 offline checks. An actual npm tarball contained all three new files, installed them for all six adapters in an isolated home, and made zero changes on repeat setup. On the development user's machine, Codex and Claude instruction bytes outside the managed blocks stayed unchanged, Antigravity's missing global activation was created, and the manual Codex skill retained its preceding content while receiving only the communication update and three absent new renderer files. It remains unowned by the installer.
+An isolated update from the actual 0.4.0 npm tarball to 0.4.1 passed for all six adapters: unchanged obsolete owned renderer files were removed, original instruction bytes and user additions were preserved, and a repeat installation made zero changes. The Node suite passed 53 tests, skill structural validation passed, and the 79 Python tests passed on retry. The initial Python run encountered the previously observed macOS `os.killpg` permission error in unchanged parent-client process-cleanup tests; no parent-client code was changed or test skipped for this presentation rollback.
 
-Sixteen browser cases exercised both output formats in light/dark themes, at 320/736px, with normal and reduced motion. All passed: no horizontal overflow, sample cards below the App's 500px limit, a single bounded entry animation, and no animation/transition under reduced motion. The Antigravity document made no network requests. The Codex first-party sandbox preview wrapper requested its three static host dependencies; the receipt component itself adds no scripts or external resources. These are browser-component checks, not native desktop acceptance.
-
-A Codex same-window panel request was acknowledged as queued; it is not counted as visible native rendering. A native inline reference is prepared for the current chat's final response. Its delivery has not been independently observed by automation during this turn.
-
-The Antigravity App UI was inspected through the supported computer-use interface. An isolated empty test composer was opened, but paste/type operations did not reliably insert the intended prompt; a coordinate action returned `noWindowsAvailable`. No incomplete test message was submitted. The HTML artifact registration and visible inline App result therefore remain **unverified** until an actual supported native submission is observed. No private RPC, conversation-database modification, application patch, or extra provider run was used to bypass that limitation.
-
-The receipt data remains a point-in-time snapshot; there is no live subscription or automatic refresh claim. Initial text receipts remain in hosts whose native rendering contract is final-response-only. Always-on compliance across tasks is a separate behavior check and is not proved by installing the renderer.
+The user's supplied screenshot establishes that the native Antigravity card had rendered, but its presentation was rejected. Existing conversation messages and artifacts are not changed by this rollback. No new provider run is needed to validate removal of the native presentation workflow.
 
 ## Independent behavioral simulation
 

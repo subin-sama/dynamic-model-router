@@ -22,8 +22,6 @@ function fixture(t) {
   fs.writeFileSync(path.join(payloadRoot, 'LICENSE'), 'MIT test fixture\n');
   fs.writeFileSync(path.join(payloadRoot, 'README.md'), 'English documentation\n');
   fs.writeFileSync(path.join(payloadRoot, 'scripts', 'sample.py'), 'print("ready")\n');
-  fs.mkdirSync(path.join(payloadRoot, 'assets'));
-  fs.writeFileSync(path.join(payloadRoot, 'assets', 'receipt.html'), '<section>Receipt template</section>\n');
   const shared = path.join(home, '.agents', 'skills', 'dynamic-model-router');
   const adapter = (id = 'codex', extra = {}) => ({
     id, label: id, detected: true,
@@ -44,7 +42,6 @@ test('fresh installation enables every task and copies only the embedded skill p
   assert.equal(result.agents[0].status, 'installed');
   assert.equal(fs.readFileSync(path.join(f.shared, 'SKILL.md'), 'utf8'), skillText);
   assert.equal(fs.existsSync(path.join(f.shared, 'cli')), false);
-  assert.equal(fs.readFileSync(path.join(f.shared, 'assets', 'receipt.html'), 'utf8'), '<section>Receipt template</section>\n');
   const instructions = fs.readFileSync(f.options.adapters[0].instructionPath, 'utf8');
   assert.ok(instructions.includes(BEGIN));
   assert.ok(instructions.includes('for every task in every project'));
