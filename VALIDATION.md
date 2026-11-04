@@ -128,6 +128,12 @@ The updated managed blocks were applied to the development user's Codex and Clau
 
 A new ordinary read-only Codex CLI task answered a minutes-to-hours question correctly but omitted the task-start receipt. This is a recorded instruction-compliance failure, not evidence that automatic display works on every task. A separate new task with explicit `$dynamic-model-router` invocation, without asking for a presentation format or overriding model/effort, emitted the compact blockquote with an Unchanged/Parent status and unexposed settings before the correct answer. These tasks used different-language prompts and are observations, not a controlled comparison proving that invocation alone determines compliance. No desktop renderer automation or live Claude response is claimed for this update.
 
+### Colored status indicators (0.3.3)
+
+The chat policy and installer summary now pair each textual status with a colored emoji: blue for recommended, yellow for requested, purple for applied, green for verified, white for unchanged, orange for unverified, and red for error. Color supplements the localized label; green retains the same runtime-evidence requirement and partial-evidence qualifiers. Terminal receipts and structured records are unchanged. The instructions explicitly avoid claiming CSS control or live animation over the host chat, and prohibit artificial status changes or repeated messages to imitate progress.
+
+All 132 offline checks and skill structural validation passed. An independent review found no evidence-status regressions. This presentation-only update did not repeat provider runs; the normal-chat compliance limitation recorded for 0.3.2 still applies. Host emoji rendering may vary, so no identical appearance across apps is claimed.
+
 ## Independent behavioral simulation
 
 A separate agent reviewed twelve scenarios covering ordinary work, difficult debugging, user locks, unsupported settings, unavailable switching controls, existing Gemini Auto, image eligibility, missing credentials, bounded escalation, and unsafe attempts to repeat external actions or evade host restrictions. These were reasoning simulations, not runtime tests.

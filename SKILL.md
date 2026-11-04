@@ -73,15 +73,17 @@ Default to at most two upward routing changes for the same unresolved work unit,
 
 Emit one short, visible routing receipt at the start of each task, before substantive work. Update it when the selected pair, execution scope, evidence status, fallback, or outcome meaningfully changes. Reuse the same receipt while these stay unchanged; do not repeat it after every tool call. Use chat commentary when the host provides it, otherwise ordinary assistant text.
 
-In Markdown-capable chats, use a compact blockquote with a neutral icon, bold status and scope, inline-code model/native effort, and an optional short reason. Keep it to two or three short lines with Markdown hard breaks; do not wrap the whole receipt in a code fence or use headings, tables, or raw bracket-log tags. Localize status, scope, labels, and reason to the user's language. Keep model IDs and native effort values exact. For example:
+In Markdown-capable chats, use a compact blockquote with a colored status indicator, bold status and scope, inline-code model/native effort, and an optional short reason. Keep it to two or three short lines with Markdown hard breaks; do not wrap the whole receipt in a code fence or use headings, tables, or raw bracket-log tags. Localize status, scope, labels, and reason to the user's language. Keep model IDs and native effort values exact. For example:
 
 ```markdown
-> ⚙️ **Routing · Recommended**\
+> 🟦 **Routing · Recommended**\
 > **External · agy** · Model `gemini-4-argon-high` · Effort `high`\
 > Review plot clues and the ending's logic.
 ```
 
 Identify the actual execution target: Parent, Worker with its name, or External with its name. A worker change is not a parent change. Include the previous pair only when it is known and useful. When Markdown is unavailable, use the same information in a compact plain-text line. Honor an explicit user presentation preference. Terminal clients retain their existing `[Routing][status][scope] model=value; effort=value` log format; chat presentation does not change structured records.
+
+Use 🟦 recommended, 🟨 requested, 🟪 applied, 🟩 verified, ⚪ unchanged, 🟧 unverified, and 🟥 error beside the localized textual status. Color supplements the label; use text alone if emoji rendering is unavailable. The host controls the emoji appearance, text colors, fonts, and spacing. This instruction-only chat format does not provide CSS or live animation; do not simulate animation with repeated messages, artificial status changes, or a prerecorded spinner that implies live execution.
 
 - `recommended`: a proposed pair, with no claim of application.
 - `requested`: settings submitted through a supported control; dispatch alone is not verification.
@@ -95,7 +97,7 @@ Emit the highest status the evidence supports, not a fabricated sequence of all 
 In advisory mode, explain once that the recommended pair cannot be applied through this host and the current runtime remains in use. For example:
 
 ```markdown
-> ⚙️ **Routing · Unchanged**\
+> ⚪ **Routing · Unchanged**\
 > **Parent** · Model/effort: not exposed\
 > This host has no permitted parent switch; current settings remain in use.
 ```

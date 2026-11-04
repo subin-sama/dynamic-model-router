@@ -73,11 +73,13 @@ Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](refere
 
 Normal Codex and Claude Code chats that load this skill are instructed to show a compact receipt at task start and update it for meaningful setting, scope, evidence, or outcome changes:
 
-> ⚙️ **Routing · Recommended**\
+> 🟦 **Routing · Recommended**\
 > **External · agy** · Model `gemini-4-argon-high` · Effort `high`\
 > Review plot clues and the ending's logic.
 
 Chat receipts use two or three short blockquote lines, with localized status, scope, labels, and reason. Model IDs and native effort values stay exact. Scope identifies Parent, Worker with its name, or External with its name. A worker change must not be presented as a parent change. Unexposed values read "not exposed" in the user's language; both can be combined as "Model/effort: not exposed". Plain-text hosts use a compact line instead. Explicit presentation preferences take priority.
+
+Colored emoji supplement the textual status: 🟦 recommended, 🟨 requested, 🟪 applied, 🟩 verified, ⚪ unchanged, 🟧 unverified, and 🟥 error. The text label remains readable without color. Emoji appearance, fonts, spacing, and text colors depend on the host. This package supplies chat instructions, not a custom CSS renderer or live animation. Animated UI would need a host-supported rendering integration; no such integration is installed by this skill.
 
 `recommended` means proposed, `requested` means submitted, `applied` requires host acknowledgement, and `verified` requires matching runtime evidence. Inherited/no-change settings use `unchanged`; unexposed values stay `unknown`. Missing evidence or a failed outcome produces `unverified` or `error`. The skill reports the highest supported status rather than inventing a sequence of lifecycle events.
 

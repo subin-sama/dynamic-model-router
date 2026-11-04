@@ -1,6 +1,6 @@
 {
   "name": "dynamic-model-router",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Install a portable model and reasoning-effort routing skill with preserved global instructions.",
   "license": "MIT",
   "repository": {
