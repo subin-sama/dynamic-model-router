@@ -79,7 +79,15 @@ Normal Codex and Claude Code chats that load this skill are instructed to show a
 
 Chat receipts use two or three short blockquote lines, with localized status, scope, labels, and reason. Model IDs and native effort values stay exact. Scope identifies Parent, Worker with its name, or External with its name. A worker change must not be presented as a parent change. Unexposed values read "not exposed" in the user's language; both can be combined as "Model/effort: not exposed". Plain-text hosts use a compact line instead. Explicit presentation preferences take priority.
 
-Colored emoji supplement the textual status: 🟦 recommended, 🟨 requested, 🟪 applied, 🟩 verified, ⚪ unchanged, 🟧 unverified, and 🟥 error. The text label remains readable without color. Emoji appearance, fonts, spacing, and text colors depend on the host. This package supplies chat instructions, not a custom CSS renderer or live animation. Animated UI would need a host-supported rendering integration; no such integration is installed by this skill.
+Colored emoji supplement the textual status: 🟦 recommended, 🟨 requested, 🟪 applied, 🟩 verified, ⚪ unchanged, 🟧 unverified, and 🟥 error. The text label remains readable without color. Emoji appearance, fonts, spacing, and text colors depend on the host. This remains the fallback when a native rendering surface is unavailable.
+
+### Native inline cards
+
+Capable graphical hosts can display the bundled HTML receipt directly in the existing conversation, with status colors, a short entry animation, reduced-motion support, and exact model/effort/evidence text. No separate window, service, or patched application is required. Codex uses its native visualization workflow; Antigravity **App** uses its built-in generative UI artifact workflow. The optional renderer needs Python 3.9+ and includes no network dependencies.
+
+Follow [the native receipt recipe](references/inline-receipts.md). Codex's current first-party contract emits visualizations in the final response, so an initial text receipt remains useful while work runs. Antigravity's registered HTML artifact can appear inline; shell output alone does not register it. CLI-only clients and the inspected standalone Antigravity IDE use the text fallback unless their exact host exposes an equivalent renderer.
+
+Cards hold snapshots. Animation is presentation, not a live runtime subscription or proof of a model switch. Meaningful updates use new snapshot files; global activation requests the workflow but cannot guarantee that every model emits a card on every task. Manual skill installations remain preserved and need their own payload update if the new renderer files are absent.
 
 `recommended` means proposed, `requested` means submitted, `applied` requires host acknowledgement, and `verified` requires matching runtime evidence. Inherited/no-change settings use `unchanged`; unexposed values stay `unknown`. Missing evidence or a failed outcome produces `unverified` or `error`. The skill reports the highest supported status rather than inventing a sequence of lifecycle events.
 
@@ -121,7 +129,7 @@ This separate **read-only text prototype** uses native CLI flags between turns w
 
 ## Validation and development
 
-The Python components have **79 offline tests**, plus real Codex worker and same-parent routing checks. The Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The installer and launcher have additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
+The Python components have **91 offline tests**, plus real Codex worker and same-parent routing checks. The Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The installer and launcher have another 53 real-filesystem Node tests, for **144 offline checks** overall. The inline component also passed 16 browser cases covering both host formats, light/dark themes, 320/736px widths, and normal/reduced motion. See [VALIDATION.md](VALIDATION.md) for native display evidence and its limits.
 
 Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 

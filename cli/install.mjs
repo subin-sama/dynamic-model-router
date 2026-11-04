@@ -8,7 +8,7 @@ import { resolveAdapters } from './adapters.mjs';
 export const BEGIN = '<!-- dynamic-model-router:begin -->';
 export const END = '<!-- dynamic-model-router:end -->';
 const NAME = 'dynamic-model-router';
-const PAYLOAD = ['SKILL.md', 'LICENSE', 'README.md', 'VALIDATION.md', 'agents', 'references', 'scripts'];
+const PAYLOAD = ['SKILL.md', 'LICENSE', 'README.md', 'VALIDATION.md', 'agents', 'references', 'scripts', 'assets'];
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const same = (a, b) => a === null ? b === null : b !== null && a.equals(b);
@@ -155,12 +155,13 @@ function blockFor(paths, newline) {
     'Reassess model and native reasoning effort at meaningful task or phase boundaries.',
     'Apply selections only through controls this host exposes and permits. Preserve explicit user model and effort choices.',
     'Distinguish recommended, requested, applied, and runtime-verified settings accurately.',
+    'Prefer supported native inline receipts in graphical Codex visualizations or Antigravity App generative UI; follow the installed references/inline-receipts.md and the host output contract. When native output is final-response-only, keep a compact text receipt at task start and show the native card with the outcome. If native rendering or its payload is unavailable, use the Markdown fallback below.',
     'At each task start, show a compact chat receipt as a Markdown blockquote with two or three short lines separated by Markdown hard breaks: a colored status indicator and bold Routing/status line, then > **Scope** · Model `value` · Effort `value`, and an optional brief reason.',
     'Use 🟦 recommended, 🟨 requested, 🟪 applied, 🟩 verified, ⚪ unchanged, 🟧 unverified, and 🟥 error beside the localized textual status; use text alone if emoji rendering is unavailable. Color supplements the label.',
     'Localize status, scope, labels, and reason to the user\'s language; keep model IDs and native effort values exact. Use a compact plain-text line if Markdown is unavailable.',
     'Identify Parent, Worker with its name, or External with its name. Update only for meaningful setting, scope, evidence, fallback, or outcome changes.',
-    'Prefer this chat format and status indicators over legacy raw bracket-log or neutral-icon examples in reused skills. Honor explicit presentation preferences; terminal and structured log formats stay unchanged.',
-    'The host controls text colors, fonts, spacing, and emoji appearance. Do not claim this skill adds CSS or live animation, or imitate live progress with repeated messages, artificial status changes, or prerecorded spinners.',
+    'Prefer native receipts when supported, otherwise this chat format and status indicators, over legacy raw bracket-log or neutral-icon examples in reused skills. Honor explicit presentation preferences; terminal and structured log formats stay unchanged.',
+    'Style or animate only the receipt inside a supported native sandbox. Do not patch the host app, inject chat DOM/CSS, open a separate window, or imitate live progress with repeated messages, artificial status changes, or prerecorded spinners. Snapshot cards do not establish a live runtime subscription.',
     'Use recommended before application, requested after submission, applied after host acknowledgement, and verified only for matching runtime evidence.',
     'Use unchanged for inherited/no-change settings and unknown for unexposed values. In chat, render unexposed values with a localized "not exposed" label, combining both as "Model/effort: not exposed" when appropriate. Never invent a model or effort or claim a worker change affected the parent.',
     'Visibly report verified, unverified, or error outcomes. Qualify partial evidence; assistant chat receipts are not native app banners or guaranteed host logs.',
