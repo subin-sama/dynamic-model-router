@@ -1,6 +1,6 @@
 # Validation
 
-Last checked: 2026-11-03. The repository includes a portable skill, a one-command global installer, a Codex catalog inspector, and an optional read-only parent App Server client. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
+Last checked: 2026-11-04. The repository includes a portable skill, a one-command global installer, a Codex catalog inspector, and an optional read-only parent App Server client. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
 
 ## Offline tests
 
@@ -119,6 +119,14 @@ Global receipt instructions were applied to the development user's Codex and Cla
 A real read-only text task through the desktop-bundled Codex CLI 0.166.0-alpha.5.1 loaded those global instructions without a skill invocation or a request to display a receipt. It emitted an initial `[Routing][unchanged][parent]` receipt with unknown model/effort values and then answered the sorting task correctly. This verifies that one normal Codex engine conversation produced the requested chat text; no desktop renderer automation was performed. The separate older PATH CLI was incompatible with the current configuration and is not counted as a successful check. Claude Code's CLI was not signed in, so its configuration was installed and checked but no live Claude response is claimed.
 
 Normal-chat receipts are generated assistant messages. This instruction and installer validation does not establish a native desktop event hook or guarantee that every model will obey the receipt instruction in every chat.
+
+### Compact chat presentation (0.3.2)
+
+Chat instructions now request a compact two- or three-line Markdown blockquote with localized status, scope, labels, and reason; model IDs and native effort values remain exact. Unknown values can be combined into a localized "Model/effort: not exposed" label. Terminal receipts and structured record schemas are unchanged. An independent review found no scope or evidence regressions, and all 132 offline checks plus skill structural validation passed.
+
+The updated managed blocks were applied to the development user's Codex and Claude Code profiles. Bytes outside each block were verified unchanged, each file retained exactly one block, and a repeat install made zero changes. The manual Codex skill's preceding content was preserved while updating its communication section.
+
+A new ordinary read-only Codex CLI task answered a minutes-to-hours question correctly but omitted the task-start receipt. This is a recorded instruction-compliance failure, not evidence that automatic display works on every task. A separate new task with explicit `$dynamic-model-router` invocation, without asking for a presentation format or overriding model/effort, emitted the compact blockquote with an Unchanged/Parent status and unexposed settings before the correct answer. These tasks used different-language prompts and are observations, not a controlled comparison proving that invocation alone determines compliance. No desktop renderer automation or live Claude response is claimed for this update.
 
 ## Independent behavioral simulation
 

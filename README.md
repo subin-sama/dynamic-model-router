@@ -73,17 +73,17 @@ Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](refere
 
 Normal Codex and Claude Code chats that load this skill are instructed to show a compact receipt at task start and update it for meaningful setting, scope, evidence, or outcome changes:
 
-```text
-[Routing][status][scope] model=value; effort=value — brief reason
-```
+> ⚙️ **Routing · Recommended**\
+> **External · agy** · Model `gemini-4-argon-high` · Effort `high`\
+> Review plot clues and the ending's logic.
 
-Tags remain in English; the reason follows the user's language. Scope identifies `parent`, `worker:name`, or `external:name`. A worker change must not be presented as a parent change.
+Chat receipts use two or three short blockquote lines, with localized status, scope, labels, and reason. Model IDs and native effort values stay exact. Scope identifies Parent, Worker with its name, or External with its name. A worker change must not be presented as a parent change. Unexposed values read "not exposed" in the user's language; both can be combined as "Model/effort: not exposed". Plain-text hosts use a compact line instead. Explicit presentation preferences take priority.
 
 `recommended` means proposed, `requested` means submitted, `applied` requires host acknowledgement, and `verified` requires matching runtime evidence. Inherited/no-change settings use `unchanged`; unexposed values stay `unknown`. Missing evidence or a failed outcome produces `unverified` or `error`. The skill reports the highest supported status rather than inventing a sequence of lifecycle events.
 
 These are **assistant-generated chat messages**, not a native desktop banner or guaranteed host event log. Host loading and model compliance still matter, and a receipt does not create a model-switch control. Updated installer blocks include the reporting requirement even when an older manual skill is reused. Re-run setup for managed global instruction updates; existing chats may need to reload their instructions.
 
-The optional CLI parent clients emit explicit terminal receipts before selection and after execution. They report verified, unverified, or error outcomes automatically, with Antigravity effort evidence qualified as catalog mapping. Optional `--record` (Antigravity) and `--transcript` (Codex) save their structured records; normal chat reporting does not create persistent log files.
+The optional CLI parent clients retain the `[Routing][status][scope] model=value; effort=value` terminal format before selection and after execution. They report verified, unverified, or error outcomes automatically, with Antigravity effort evidence qualified as catalog mapping. Optional `--record` (Antigravity) and `--transcript` (Codex) save their unchanged structured records; normal chat reporting does not create persistent log files.
 
 ## Standard skill-manager alternative
 

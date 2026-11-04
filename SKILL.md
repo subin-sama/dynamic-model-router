@@ -73,28 +73,31 @@ Default to at most two upward routing changes for the same unresolved work unit,
 
 Emit one short, visible routing receipt at the start of each task, before substantive work. Update it when the selected pair, execution scope, evidence status, fallback, or outcome meaningfully changes. Reuse the same receipt while these stay unchanged; do not repeat it after every tool call. Use chat commentary when the host provides it, otherwise ordinary assistant text.
 
-Use stable English tags with a brief reason in the user's language:
+In Markdown-capable chats, use a compact blockquote with a neutral icon, bold status and scope, inline-code model/native effort, and an optional short reason. Keep it to two or three short lines with Markdown hard breaks; do not wrap the whole receipt in a code fence or use headings, tables, or raw bracket-log tags. Localize status, scope, labels, and reason to the user's language. Keep model IDs and native effort values exact. For example:
 
-```text
-[Routing][status][scope] model=value; effort=value — brief reason
+```markdown
+> ⚙️ **Routing · Recommended**\
+> **External · agy** · Model `gemini-4-argon-high` · Effort `high`\
+> Review plot clues and the ending's logic.
 ```
 
-Use `parent`, `worker:name`, or `external:name` for scope. Identify the actual execution target; a worker change is not a parent change. Include the previous pair only when it is known and useful.
+Identify the actual execution target: Parent, Worker with its name, or External with its name. A worker change is not a parent change. Include the previous pair only when it is known and useful. When Markdown is unavailable, use the same information in a compact plain-text line. Honor an explicit user presentation preference. Terminal clients retain their existing `[Routing][status][scope] model=value; effort=value` log format; chat presentation does not change structured records.
 
 - `recommended`: a proposed pair, with no claim of application.
 - `requested`: settings submitted through a supported control; dispatch alone is not verification.
 - `applied`: the host acknowledges application within the reported scope.
 - `verified`: effective runtime evidence matches. Qualify partial evidence, such as a verified model variant with effort mapped from its catalog rather than an independent effort field.
-- `unchanged`: no setting change was requested; identify inherited/current settings when observable. Use `model=unknown` or `effort=unknown` for values the host does not expose. Unknown values do not establish a verified pair.
+- `unchanged`: no setting change was requested; identify inherited/current settings when observable. Render unknown values as a short localized "not exposed" label when the host does not expose them; if both are unexposed, combine them as "Model/effort: not exposed". Keep `unknown` in raw logs or records. Unknown values do not establish a verified pair.
 - `unverified` or `error`: a requested outcome lacks runtime evidence, or a change/execution failed. Report the fallback and avoid a false success receipt.
 
 Emit the highest status the evidence supports, not a fabricated sequence of all lifecycle stages. A recommendation must never be presented as an applied change. If a change finishes with verification, missing evidence, or a mismatch, report that outcome visibly; do not leave only a pre-execution selection message. Never infer IDs or effort from writing style or a successful answer.
 
 In advisory mode, explain once that the recommended pair cannot be applied through this host and the current runtime remains in use. For example:
 
-```text
-[Routing][recommended][parent] model=available-model; effort=high — Complex investigation; this host has no permitted parent switch, so current settings remain in use.
-[Routing][unchanged][parent] model=unknown; effort=unknown — Inherited host settings are not exposed; no change requested.
+```markdown
+> ⚙️ **Routing · Unchanged**\
+> **Parent** · Model/effort: not exposed\
+> This host has no permitted parent switch; current settings remain in use.
 ```
 
 These are assistant-generated chat receipts, not a native app banner or an unconditional host event log. Do not invent a receipt for an event that did not happen, log private reasoning, or create persistent log files unless requested or already configured.

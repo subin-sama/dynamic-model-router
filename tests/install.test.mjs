@@ -45,7 +45,7 @@ test('fresh installation enables every task and copies only the embedded skill p
   const instructions = fs.readFileSync(f.options.adapters[0].instructionPath, 'utf8');
   assert.ok(instructions.includes(BEGIN));
   assert.ok(instructions.includes('for every task in every project'));
-  assert.ok(instructions.includes('[Routing][status][scope]'));
+  assert.ok(instructions.includes('Markdown blockquote'));
   assert.ok(instructions.includes('unknown for unexposed values'));
   assert.ok(instructions.includes('verified only for matching runtime evidence'));
   assert.ok(instructions.includes(path.join(f.shared, 'SKILL.md')));
@@ -86,7 +86,7 @@ test('upgrades an older owned instruction block while preserving manual instruct
   install(f.options);
   const metadata = state(f.home);
   const current = Buffer.from(metadata.instructions[target].block, 'base64');
-  const legacy = Buffer.from(`${BEGIN}\r\n## Automatic model and effort routing\r\n\r\nUse the installed dynamic-model-router skill for every task in every project.\r\n${END}\r\n`);
+  const legacy = Buffer.from(`${BEGIN}\r\n## Automatic model and effort routing\r\n\r\nUse the installed dynamic-model-router skill for every task in every project.\r\nAt each task start, show a short visible chat receipt: [Routing][status][scope] model=value; effort=value.\r\n${END}\r\n`);
   const file = bytes(target);
   const start = file.indexOf(current);
   const addition = '\r\nLater user instruction\r\n';
@@ -98,7 +98,8 @@ test('upgrades an older owned instruction block while preserving manual instruct
   const updated = bytes(target);
   assert.ok(updated.subarray(0, Buffer.byteLength(original)).equals(Buffer.from(original)));
   assert.ok(updated.includes(Buffer.from(addition)));
-  assert.ok(updated.includes(Buffer.from('[Routing][status][scope]')));
+  assert.ok(updated.includes(Buffer.from('Markdown blockquote')));
+  assert.equal(updated.includes(Buffer.from('[Routing][status][scope]')), false);
   assert.equal(updated.toString().split(BEGIN).length - 1, 1);
   assert.ok(bytes(upgrade.backups[0]).equals(previous));
   assert.equal(install(f.options).changes.length, 0);
