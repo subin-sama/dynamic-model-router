@@ -1,5 +1,11 @@
 # Host adapters
 
+For portable discovery and authorized separate runs across installed CLIs, use
+[cross-provider routing](cross-provider-routing.md). Discover the destination
+client's capabilities: a desktop catalog can differ from a standalone CLI's.
+The external Codex adapter therefore prefers that CLI's live `model/list` and
+uses a cache only as explicitly labeled fallback metadata.
+
 Read only the relevant host section. Live instructions, tools, versions, and supported values take precedence over these examples. These notes do not grant new controls or permissions.
 
 ## Codex

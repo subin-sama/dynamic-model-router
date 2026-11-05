@@ -1,10 +1,10 @@
 # Validation
 
-Last checked: 2026-11-04. The repository includes a portable skill, a one-command global installer, a Codex catalog inspector, and an optional read-only parent App Server client. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
+Last checked: 2026-11-05. The repository includes a portable skill, a one-command global installer, catalog discovery, optional same-parent clients, and a separate cross-provider text-work controller. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
 
 ## Offline tests
 
-**108 tests passed** on the development host using Python 3.9.6:
+**188 Python tests passed** on the development host:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
@@ -14,6 +14,8 @@ Last checked: 2026-11-04. The repository includes a portable skill, a one-comman
 | Antigravity parent client | 37 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, process cleanup, validation and bounded repair |
 | Routing receipts | 5 | Compact output, unknown values, truthful Codex and Antigravity verified/unverified/error outcomes, scope and evidence qualifiers |
 | Answer validator | 8 | Strict checker results, unavailable/error states, literal command arguments, deadlines, bounded I/O, process cleanup and repair-budget validation |
+| Cross-provider controller | 43 | Per-machine onboarding, provider changes, task preferences, exact locks, missing auth, stale plans, native Gemini values, timeout cleanup, private diagnostics, separate answer/runtime outcomes |
+| CLI provider adapters | 37 | Destination CLI catalogs, auth metadata filtering, native argument construction, Gemini settings, actual result shapes, error classification, aliases and partial runtime evidence |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -25,11 +27,13 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 108 Python tests, the repository has **161 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
+The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 188 Python tests, the repository has **241 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
-The distribution is English-only, including documentation, installer output, and test fixtures. The installer intentionally preserves non-English user instructions. No credentials, personal profile files, or raw runtime session identifiers are included in the npm payload.
+Documentation and installer output are in English. The cross-provider controller includes English and Thai onboarding templates, and the hosting agent localizes its question to the user. The installer intentionally preserves non-English user instructions. No credentials, personal profile files, or raw runtime session identifiers are included in the npm payload.
+
+For 0.6.0, `npm pack --dry-run` confirmed both new Python scripts and their reference documentation are included. An actual install into an isolated temporary `--home` configured all six host adapters across two skill locations. The new scripts, shared RPC dependency, and cross-provider reference matched the repository byte-for-byte. Real user profiles were not modified by this check.
 
 Installation support is verified for the six documented adapters. Antigravity uses the officially documented common App/CLI/IDE paths, but global policy loading in each running surface has not been live-tested. The separate CLI runtime test below used workspace activation. Setup detects competing same-name CLI/legacy skills before writing and preserves unresolved manual copies. It configures user-wide context; it cannot force model compliance, override managed restrictions, or install a global hook into arbitrary closed AI products. Native model/effort behavior remains separately bounded below.
 
@@ -40,6 +44,23 @@ The standard `skills` CLI discovers the repository-root `SKILL.md` without a cus
 Codex's bundled `skill-installer` helper was tested independently with repository path `.` and explicit name `dynamic-model-router`, using a separate destination. It installed successfully. Neither installation test modified the user's global skill copy or `AGENTS.md`.
 
 The documented `-g` option is the standard CLI's global scope switch; the live installation tests used project/custom destinations to avoid duplicate user-wide installations. Standard installation does not itself add always-on instructions to `AGENTS.md`.
+
+## Cross-provider invocation checks (2026-11-05)
+
+The new controller was exercised on macOS using a small sorting/arithmetic task with a nonce, and its answer was checked independently. These are invocation checks, not comparative quality or cost benchmarks.
+
+| Provider | Requested model / effort | Invocation and answer check | Runtime-setting evidence |
+| --- | --- | --- | --- |
+| Antigravity | `gemini-4-argon-low` / `low` | Completed; answer passed | JSON did not report effective model or effort; unverified |
+| Codex CLI | `gpt-5.6-luna` / `low` | Completed; answer passed | JSON did not report effective model or effort; unverified |
+| Claude Code | `fable` / `low` | Attempt stopped at missing login; user chose to record this prerequisite | No completed inference or verified pair |
+| Gemini CLI | `gemini-3-pro-preview` / `LOW` | Attempt stopped at missing authentication, exit 41 | No completed inference or verified thinking setting |
+
+Live testing exposed a difference between the desktop Codex cache and the standalone CLI's catalog. The adapter now queries the destination CLI's `model/list` first; after correcting the model selection, its real invocation passed. Antigravity's actual `SUCCESS`/`response` JSON shape is covered by regression tests. Its plan mode is preserved by not combining it with the slash-expansion disabling flag. Gemini's structured startup errors on stderr are classified as prerequisites, not reasoning failures.
+
+The first installed-skill subset had 127 passing Python tests. The 188-test count above is the complete repository suite, including existing parent clients and validators. An independent forward review of a new user's machine passed: detect that machine's CLIs first, distinguish an installed app from a usable CLI, ask about additional providers, and do not infer setup permission from an optional unanswered question.
+
+CLI presence, dispatch controls, account access, effective settings, and answer acceptance remain separate statuses. The controller does not change the current parent model, silently weaken native restrictions, install another provider, or retry external actions. Gemini native configuration is tested offline; successful live Gemini and Claude inference still require authentication. Linux and Windows live provider execution was not tested in this pass.
 
 ## Live native-worker test
 
@@ -171,5 +192,5 @@ A separate agent reviewed twelve scenarios covering ordinary work, difficult deb
 - Settings apply between turns, not to a request already in flight.
 - Runtime verification establishes Codex's resolved settings, not independent provider-side backend attestation.
 - Routing adds selection turns and repair can add further failed attempts. A small correctness pilot does not establish general quality, latency or monetary savings; reported tokens are not a monetary-cost measurement.
-- Claude Code and Gemini CLI guidance was checked against official documentation only. Account/version/organization capabilities must be discovered on the recipient's host.
+- Claude Code and Gemini CLI discovery and invocation prerequisites were checked locally, but successful inference was blocked by missing authentication. Account/version/organization capabilities must still be discovered on each recipient's host.
 - macOS was live-tested. POSIX process-group cleanup has an offline test; Windows cleanup covers the direct server only and has no live Windows validation.

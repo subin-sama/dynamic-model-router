@@ -1,11 +1,25 @@
 ---
 name: dynamic-model-router
-description: Dynamically select available models and native reasoning settings for task phases and delegated work. Use when automatic routing is enabled or a user asks to adapt quality, latency, or cost in AI agents such as Codex, Claude Code, Gemini CLI, Antigravity, OpenCode, Copilot CLI, or an API agent.
+description: Discover the current user's installed AI providers, ask about additional providers, and select provider, model, and native reasoning settings by task. Supports Codex, Claude Code, Antigravity, and Gemini CLI through their actual controls, with checked separate CLI runs when authorized.
 ---
 
 # Dynamic Model Router
 
 Choose an appropriate model AND its native reasoning setting for the work about to run. Reassess as the work changes. Use real runtime controls when available; distinguish a recommendation from an applied setting.
+
+## Discover this user's machine first
+
+Do not assume this machine has the author's providers, paths, accounts, or models. At first activation on a machine, and when capabilities change, run `scripts/cross_cli_router.py discover`. It checks the current PATH and installed CLI controls without inference or credential inspection. App installation alone is not dispatch readiness. For authorized cross-provider routing, add `--models` to inspect supported local catalogs and Antigravity's model-list command; this may contact the signed-in provider for metadata. A catalog does not establish entitlement or successful execution.
+
+Read the returned `onboarding` field. When `question_required` is true, summarize the detected providers and **ask the user in their language whether they have other models/providers they want help setting up and using**. Examples may include Ollama, LM Studio, OpenRouter, or another provider; do not imply they are already installed or supported. Record `pending` only after showing the question, and record an actual answer with the `onboard` command. State is per user/machine, outside the distributed skill; never ship one user's answers to another user. A pending optional answer does not block work already authorized on detected providers. Do not ask the same question on every task or treat silence as approval for setup.
+
+If the user names another provider, inspect its installed executable/API integration and supported controls, then perform the setup they authorized. Installation, login, account creation, subscriptions, and adding credentials are separate actions; naming a provider is not blanket permission for them. Use the provider's normal authentication flow; never request secrets in chat. A detected extra CLI is a hint, not a ready adapter. Do not dispatch through an unimplemented adapter or silently replace one provider with another. See [cross-provider routing](references/cross-provider-routing.md) for onboarding, planning, execution, and adding an adapter.
+
+After discovery, the hosting agent assesses the task and picks a supported provider/model/effort pair. Honor explicit locks. Choose from live discovered capabilities, user preferences, and observed task results; do not hard-code that one brand is always best at writing, coding, or reasoning. The included planner can choose a baseline from advertised model descriptions, native effort fit, and user task preferences; that baseline is **not** a cross-provider quality benchmark. Reassess it when real results provide better evidence.
+
+When cross-provider delegation is authorized, use `plan` and `run --execute` to send a bounded task packet to the selected CLI. The controller creates an isolated temporary working directory and returns text for the parent to review and apply. It supports analysis, drafting, code proposals, and review; it does not grant a worker write access to the user's project or replace the current parent model. Pass only the relevant task/context, decisions, acceptance checks, and ownership. Keep the parent responsible for integration. Do not replay an external action when a response fails a check. Never launch the controller recursively from its own workers.
+
+Separate **detected**, **dispatch-ready**, **account-access tested**, **runtime settings evidence**, and **answer check** in reports. Some CLIs expose a model in usage metadata but no effective effort; report the effort unverified. Gemini uses native thinking configuration, not a fabricated `--effort` flag. An Antigravity effort label encoded in a catalog variant is catalog evidence, not an independently reported runtime effort field.
 
 ## Capability check
 

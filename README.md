@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A portable model and reasoning-effort routing skill, with a **one-command global installer** that preserves existing user instructions.
+A portable provider, model, and reasoning-effort routing skill, with a **one-command global installer** that preserves existing user instructions.
 
 ## Install and enable globally
 
@@ -69,6 +69,47 @@ Global activation makes this policy part of the host's user instructions. **Actu
 
 Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](references/hosts.md) for runtime boundaries.
 
+## Discover providers and route work across CLIs
+
+Version **0.6.0** adds a separate text-work controller for **Claude Code, Antigravity (`agy`), Codex, and Gemini CLI**. The hosting agent assesses the task, discovers what is available on the current user's machine, and selects a supported provider/model/effort pair. It does not borrow the author's installed paths or model catalog.
+
+On first use, the skill summarizes detected providers and asks whether the user has other models or services they want help setting up and using. It records that question and the actual response per user/machine, so it does not ask again on every task. Pending optional answers do not block already-authorized work. Extra CLI hints such as Ollama are not automatically installed, authenticated, or treated as working adapters.
+
+Resolve `SKILL_DIR` to this user's installed skill directory. These commands need Python **3.9+**; the Node-only global installer remains independent:
+
+```sh
+# Discovery sends no inference; --models may contact provider metadata services.
+python3 "$SKILL_DIR/scripts/cross_cli_router.py" discover --models --output work/providers.json
+
+# Show the returned onboarding question first, then record its actual status.
+python3 "$SKILL_DIR/scripts/cross_cli_router.py" onboard --inventory work/providers.json --answer pending
+
+# The hosting agent chooses task type/complexity; the planner validates eligibility.
+python3 "$SKILL_DIR/scripts/cross_cli_router.py" plan --inventory work/providers.json --task-kind coding --complexity standard --output work/route.json
+
+# Put the relevant task/context in a UTF-8 handoff file before dispatch.
+python3 "$SKILL_DIR/scripts/cross_cli_router.py" run --plan work/route.json --task-file work/handoff.txt --scratch-root work --execute --output work/result.json
+```
+
+Without `--execute`, `run` only displays the plan. A real run uses a temporary directory and returns text or code proposals to the parent for review and integration. It does not change the model of the current desktop chat or grant the worker ownership of the user's project. Login, workspace trust, and provider-native permission restrictions remain in effect.
+
+| Provider | Model and reasoning controls |
+| --- | --- |
+| Claude Code | Installed CLI aliases and native effort enum; auth status is checked without exposing account identifiers |
+| Antigravity | Account-visible `agy models` variants with matching native effort flags |
+| Codex | The destination CLI's live `model/list` and exact advertised efforts; a desktop cache is only a labeled fallback |
+| Gemini CLI | Installed aliases or recognized concrete models; supported thinking levels use run-local native settings, not a fabricated `--effort` flag |
+
+Explicit model/effort locks are preserved. Automatic baseline selection uses user task preferences, advertised descriptions, and native effort fit; it is not a measured claim that one provider is best at a particular task. Unknown controls are omitted or rejected, and known missing authentication is excluded from selection. See [the full workflow](references/cross-provider-routing.md) for onboarding answers, state locations, adding another provider, and opt-in diagnostics.
+
+For an authorized real invocation check:
+
+```sh
+python3 "$SKILL_DIR/scripts/cross_cli_router.py" smoke --inventory work/providers.json --scratch-root work --execute --output work/smoke.json
+```
+
+The recorded smoke checks passed for Codex and Antigravity. Claude and Gemini could not complete inference because authentication was missing. The successful CLI outputs did not expose effective model/effort fields, so those runtime pairs remain **unverified**, separately from the passed answer checks. See [validation](VALIDATION.md#cross-provider-invocation-checks-2026-11-05).
+
 ## Check answers before accepting them
 
 Define acceptance checks before choosing a lighter pair. The skill asks the agent to validate the candidate against the original task before treating it as complete, using independent tests or recomputation when available. It distinguishes answer validation from model/effort runtime verification and does not treat model confidence as proof.
@@ -133,7 +174,7 @@ This separate **read-only text prototype** uses native CLI flags between turns w
 
 ## Validation and development
 
-The Python components have **79 offline tests**, plus real Codex worker and same-parent routing checks. The Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. The installer and launcher have additional real-filesystem Node tests for preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. See [VALIDATION.md](VALIDATION.md).
+The repository has **188 Python tests and 53 Node tests**, all passing in the 0.6.0 check. The Node suite covers preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
 
 Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 
