@@ -4,20 +4,21 @@ Last checked: 2026-11-17. The repository includes a portable skill, a one-comman
 
 ## Offline tests
 
-**226 Python tests passed** on the development host:
+**274 Python tests passed** on the development host:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
 | Catalog inspector | 11 | Visibility, sparse native effort support, duplicate/malformed metadata, freshness, field filtering, CLI errors |
 | RPC transport | 13 | Event-before-response ordering, concurrent IDs, bounded deadlines/cleanup, safe request rejection, EOF, bounded stderr |
-| Parent client | 34 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup, validation and bounded repair |
-| Antigravity parent client | 37 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, process cleanup, validation and bounded repair |
-| Routing receipts | 5 | Compact output, unknown values, truthful Codex and Antigravity verified/unverified/error outcomes, scope and evidence qualifiers |
+| Parent client | 36 | Model/effort locks, catalog eligibility, same-thread selection/application/execution, failed turns, missing telemetry, exact turn matching, startup effort, stream cleanup, validation and bounded repair |
+| Antigravity parent client | 38 | Exact native variants, locks on selection and execution, same-conversation sequencing, context drift, fresh telemetry, missing/mismatched runtime evidence, bounded transport, process cleanup, validation and bounded repair |
+| Routing receipts | 2 | Compact output, unknown values and unsupported status handling; client-specific outcome receipts are also checked in their parent-client suites |
 | Answer validator | 8 | Strict checker results, unavailable/error states, literal command arguments, deadlines, bounded I/O, process cleanup and repair-budget validation |
 | Cross-provider controller | 43 | Per-machine onboarding, provider changes, task preferences, exact locks, missing auth, stale plans, native Gemini values, timeout cleanup, private diagnostics, separate answer/runtime outcomes |
 | CLI provider adapters | 41 | Destination CLI catalogs, optional provider capability metadata, auth filtering, native arguments, Gemini settings, actual result shapes, error classification, aliases and partial runtime evidence |
 | Capability selection engine | 22 | Output/input distinctions, multiple/single/no candidates, exact locks, hidden/unavailable interfaces, route-scoped authentication, duplicate observations and discovery-only native flags |
 | Capability CLI integration | 12 | Specialized task classification, pending/explicit choices, schema snapshots, wrong-machine rejection, unchanged text selection and artifact rejection before dispatch |
+| Codex native image bridge | 48 | Choice/execute gates, cancellation, prompt and coordinator binding, single-use concurrency/replay prevention, native catalog/acknowledgement, MCP isolation, matched image items, PNG structure/raster validation, evidence privacy and no-overwrite publication |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -29,7 +30,7 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node suite has **95 passing tests**: 37 original preservation/ownership/CLI/integration cases, 13 host-adapter cases, 3 launcher cases, 21 native Claude hook installation cases, and 21 hook-runtime cases. Together with the 226 Python tests, the repository has **321 offline checks**. Tests cover original bytes and modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, custom configuration roots, hook ownership/privacy, metadata failure and caching, literal arguments, bounded child-tree cleanup, concurrent edits, rollback, and safe uninstall retaining newer user changes.
+The Node suite has **97 passing tests**: 37 original preservation/ownership/CLI/integration cases, 13 host-adapter cases, 3 launcher cases, 21 native Claude hook installation cases, and 23 hook-runtime cases. Together with the 274 Python tests, the repository has **371 offline checks**. Tests cover original bytes and modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, custom configuration roots, hook ownership/privacy, metadata failure and caching, installed-image-bridge detection without execution, literal arguments, bounded child-tree cleanup, concurrent edits, rollback, and safe uninstall retaining newer user changes.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
@@ -97,6 +98,28 @@ Independent review confirmed voluntary stopping: the two completed runs recorded
 **Verified:** automatic native discovery/context delivery, advertised-only Codex reporting, and a user-facing handoff question before generation. **Not established:** two qualified callable image routes, an interactive multi-generator picker, successful handoff/generation, or universally correct model interpretation. The final semantic outcome remains partial rather than a full capability-choice pass. Existing startup plugins retained their normal context; this was not a pristine, skill-only ablation.
 
 See [native activation and its evidence boundaries](references/claude-activation.md). A hook makes discovery/context delivery deterministic when it runs successfully; actual interpretation and a multiple-generator user choice still require live model evidence with qualified callable routes.
+
+## Native Codex image bridge (0.9.0)
+
+The dedicated image adapter is separate from the text dispatcher. It probes native metadata, prepares a prompt-bound pending ticket, requires an explicit selected route before inference, and accepts only a matching completed native image item. It validates decoded PNG chunks, CRCs and raster data before publishing a new artifact. A single-use claim prevents replay, including after timeout or a failed image turn. Coordinator model/effort selections and executable version/identity are bound to the ticket and checked before execution. They do not identify the image backend.
+
+The 48 bridge cases passed offline. Full development suites passed 274 Python and 97 Node checks. An initial macOS suite run encountered the previously observed `os.killpg` permission error in unchanged Antigravity cleanup code; that module's 38 cases and complete 264- and 274-case suites passed afterward. No test was skipped or Antigravity implementation changed for this feature.
+
+An actual 0.9.0 npm tarball passed 18 isolated fresh/upgrade/preservation checks, including upgrade from committed 0.8.0 across all six adapters. Both installed payload roots passed import/help, bound preparation, changed-runtime rejection, missing-choice refusal, cancellation and consumed-ticket checks. Only an explicit fixture executable's four bounded version calls were allowed; actual provider subprocesses were blocked. Existing settings/profile bytes were preserved, exactly one native hook remained, repeat setup changed nothing, and uninstall restored originals exactly. Development installation preserved all existing instruction/Claude-settings bytes and the then-current Codex configuration on each update. A later concurrent config hash change was observed separately and left intact.
+
+Real read-only preflight used Codex CLI 0.146.0. It exposed two compatibility prerequisites: runtime MCP entries needed process-scoped App/plugin suppression before per-server isolation, and the App's configured coordinator was absent from this CLI's catalog. A supported temporary `gpt-5.6-sol` / `low` pair passed native metadata and scoped empty-MCP-tool checks without changing persistent defaults or starting inference. An absent catalog entry is not proof of an account entitlement denial.
+
+Current-runtime inspection found a bundled Codex 0.169.0-alpha.11.1 that supports the same selected pair. The adapter now discovers PATH and supported App bundles, binds the selected executable, accepts the current capability schema without inventing a missing `namespaceTools` value, and follows the App's image/media flags. Native code-mode wrappers are permitted when required by the selected model. Inline bytes are preferred; file references require a matching native saved path confined to the active thread's generated-image directory. Twelve isolated JSONL wire checks exercised actual transport/CLI handling for inline and file-reference fixtures with no real provider calls. Those tiny synthetic PNGs are not real image-generation evidence.
+
+Real Claude tests used a natural image request with a choose-first requirement, without explicitly naming the skill or supplying fabricated tools. The local test guard initially rejected harmless shell formatting, a confined preparation-directory prefix, and later CLI help. These failed harness attempts were retained; none attempted generation. After compatibility corrections, a native first-turn result asked for a Codex route/coordinator selection with zero pre-choice generator attempts, guard blocks or artifacts. The actual user chose `gpt-5.6-sol` / `low` through the relayed question; that reply was recorded and forwarded to Claude. Connector absence and account-permission wording in that response were not accepted as independently verified facts.
+
+An older-runtime coordinator turn returned `native_image_missing`; its request was consumed and not replayed. Claude subsequently hit a real five-hour quota before a modern attempt, and the user explicitly chose to wait for its reported reset. A later metadata-only failure was also retained. The final run was a **fresh authorized Claude continuation** using that same real user choice and a new pending request bound to the current runtime. It was not the same process as the initial question.
+
+**The successful continuation completed with exit 0 and native `is_error: false`.** Claude invoked the bridge once using `gpt-5.6-sol` / `low`; Codex emitted one matching completed `imageGeneration` item and a completed turn. The native encoded-result hash matches the base64 of the exported PNG, whose SHA256 is `ec58fb935cdd159807d14c786520003fb0b7abcc70447ff1d9763678283f3762`. The actual image is 1536 × 1024 pixels and 3,681,586 bytes. Independent PNG checks passed chunk CRCs and readable raster data; visual inspection confirmed an orange cat with a teacup in a flower garden. The successful continuation took 153.683 seconds, excluding earlier development, failures and quota waiting. No additional image was generated for review. The backend image-model ID remained unexposed.
+
+This establishes a real question → actual user selection → native Codex image workflow across an authorized continuation. It does not establish a single-process conversation, rendered Claude desktop picker, multiple image backends, or a general speed/cost advantage. The successful live image used inline bytes; file-reference handling has synthetic/local coverage only. Earlier failures are not relabeled as passes.
+
+See [bridge controls and artifact evidence](references/codex-image-bridge.md). A Codex route plus cancellation is not proof of multiple image backends, and a CLI question is not a rendered Claude desktop picker.
 
 ## Live native-worker test
 
@@ -228,5 +251,5 @@ A separate agent reviewed twelve scenarios covering ordinary work, difficult deb
 - Settings apply between turns, not to a request already in flight.
 - Runtime verification establishes Codex's resolved settings, not independent provider-side backend attestation.
 - Routing adds selection turns and repair can add further failed attempts. A small correctness pilot does not establish general quality, latency or monetary savings; reported tokens are not a monetary-cost measurement.
-- Historical cross-provider text-controller checks stopped at missing Claude/Gemini authentication. The later Claude native-activation probes completed inference, but did not establish an executable image bridge or multiple-generator choice. Gemini successful inference remains untested. Account/version/organization capabilities must still be discovered on each recipient's host.
+- Historical cross-provider text-controller checks stopped at missing Claude/Gemini authentication. The later Claude native-activation probes completed inference. Version 0.9.0 subsequently established a selected native Codex image workflow across an authorized continuation; a multiple-generator choice remains untested. Gemini successful inference remains untested. Account/version/organization capabilities must still be discovered on each recipient's host.
 - macOS was live-tested. POSIX process-group cleanup has an offline test; Windows cleanup covers the direct server only and has no live Windows validation.

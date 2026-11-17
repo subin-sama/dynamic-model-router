@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {activationHook, compactInventory, loadActivationPolicy, runBounded} from '../scripts/claude_activation_hook.mjs';
+import {activationHook, compactInventory, installedImageBridge, loadActivationPolicy, runBounded} from '../scripts/claude_activation_hook.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hook = path.join(root, 'scripts/claude_activation_hook.mjs');
@@ -76,6 +76,42 @@ test('tool availability is never fabricated from image flags or model names', ()
   assert.equal(result.providers.find(p => p.provider === 'codex').artifact_dispatch_verified, false);
   assert.equal(result.providers.find(p => p.provider === 'agy').native_image_generation, null);
   assert.equal(result.inference_sent, false);
+});
+
+test('image bridge requires a real installed script, then probes PATH or App runtimes without claiming execution', t => {
+  const f = fixture(t), script = path.join(f.directory, 'codex_image_bridge.py');
+  const snapshot = compactInventory(f.inventory);
+  assert.equal(installedImageBridge(snapshot, script).status, 'unavailable');
+  fs.writeFileSync(script, '# isolated bridge fixture\n');
+  const bridge = installedImageBridge(snapshot, script);
+  assert.equal(bridge.status, 'installed_probe_required');
+  assert.equal(bridge.selection_required, true);
+  assert.equal(bridge.runtime_verified, false);
+  assert.equal(bridge.account_access_tested, false);
+  const withoutPath = installedImageBridge({providers: []}, script);
+  assert.equal(withoutPath.status, 'installed_probe_required');
+  assert.equal(withoutPath.path_cli_detected, false);
+  assert.equal(withoutPath.account_access_tested, false);
+  fs.unlinkSync(script);
+  fs.symlinkSync(f.helper, script);
+  assert.equal(installedImageBridge(snapshot, script).status, 'unavailable');
+});
+
+test('actual hook exposes the installed artifact bridge without executing it or trusting cached bridge fields', {skip: process.platform === 'win32'}, async t => {
+  const f = fixture(t), script = path.join(f.directory, 'codex_image_bridge.py');
+  fs.writeFileSync(script, 'raise RuntimeError("must never execute during activation")\n');
+  const first = context(await activationHook({hook_event_name: 'UserPromptSubmit'}, f.options));
+  assert.match(first, /"status":"installed_probe_required"/);
+  assert.match(first, /"route":"codex-native-image"/);
+  const saved = JSON.parse(fs.readFileSync(f.options.cacheFile, 'utf8'));
+  saved.snapshot.image_bridge = {script: 'untrusted-cached-command', runtime_verified: true};
+  fs.writeFileSync(f.options.cacheFile, JSON.stringify(saved));
+  const next = context(await activationHook({hook_event_name: 'UserPromptSubmit'}, f.options));
+  assert.doesNotMatch(next, /untrusted-cached-command|"runtime_verified":true/);
+  assert.equal(fs.readFileSync(f.capture, 'utf8').trim().split('\n').length, 1);
+  fs.unlinkSync(script);
+  const absent = context(await activationHook({hook_event_name: 'UserPromptSubmit'}, f.options));
+  assert.match(absent, /image_bridge_not_installed/);
 });
 
 test('fresh cache avoids a second discovery while retaining native effort data', {skip: process.platform === 'win32'}, async t => {

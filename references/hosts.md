@@ -41,7 +41,9 @@ For profile-based routing, select an already configured profile with a valid loc
 
 Personal skills live at `~/.claude/skills/<name>/SKILL.md`; project skills at `.claude/skills/<name>/SKILL.md`. The portable skill policy can be installed unchanged; native overrides still depend on the installed version/tools.
 
-Sources checked 2026-11-02; CLI execution not tested:
+For an image request, the dedicated [Codex image bridge](codex-image-bridge.md) is a separate native artifact route callable through local execution. It discovers the installed Codex runtime, requires the actual user's route choice unless already selected, binds worker settings, and validates the returned image. A successful Claude Code → Codex image run is recorded in [validation](../VALIDATION.md#native-codex-image-bridge-090); this does not change the current Claude parent model or prove a rendered desktop picker.
+
+Documentation snapshot checked 2026-11-02. Later CLI activation/image tests are recorded separately; they do not establish parent-override behavior for every control described above:
 
 - [Skills and frontmatter](https://code.claude.com/docs/en/skills)
 - [Model and effort configuration](https://code.claude.com/docs/en/model-config)

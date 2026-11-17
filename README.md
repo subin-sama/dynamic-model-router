@@ -14,6 +14,8 @@ The command detects supported agents, installs the skill, backs up their existin
 
 For Claude Code, version **0.8.0** also installs a native `UserPromptSubmit` hook that performs read-only machine discovery and supplies a compact routing policy/snapshot before Claude responds. This fixes reliance on the model choosing to open the skill by itself. Existing settings, permissions and hooks are preserved. Python 3.9+ is needed for metadata discovery; cached, missing and unavailable evidence is labeled explicitly. See [native Claude activation](references/claude-activation.md).
 
+Version **0.9.0** adds a separate [Codex native image bridge](references/codex-image-bridge.md) callable from Claude Code. It discovers compatible PATH/App runtimes, probes native prerequisites, binds runtime and coordinator settings to a pending request, requires a selected route before generation, and validates the returned image file. It uses the existing Codex login and leaves Claude's parent settings unchanged. The image backend model can remain unexposed; several chat models or Codex installations are not several image generators. A real Claude Code test asked before creation, received the actual user's selection, and a fresh authorized continuation produced a validated 1536×1024 native image; [the validation report](VALIDATION.md#native-codex-image-bridge-090) retains the preceding failures and scope limits.
+
 To configure all six supported agents, including ones not yet installed:
 
 ```bash
@@ -190,7 +192,7 @@ This separate **read-only text prototype** uses native CLI flags between turns w
 
 ## Validation and development
 
-The repository has **226 Python tests and 95 Node tests**, all passing in the 0.8.0 check. Capability tests distinguish output from input, enforce user choice and reject artifact plans before text dispatch. Native Claude tests cover activation, private metadata caching, settings preservation and bounded child cleanup. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
+The repository has **274 Python tests and 97 Node tests**, all passing in the 0.9.0 check. Capability tests distinguish output from input, enforce user choice and reject artifact plans before text dispatch. The native image bridge adds pending/selected/canceled gates, bound coordinator settings, single-use execution and independent PNG checks. Native Claude tests cover activation, private metadata caching, settings preservation and bounded child cleanup. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
 
 Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 

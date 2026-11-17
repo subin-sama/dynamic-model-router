@@ -10,7 +10,7 @@ Claude Code's [native activation hook](claude-activation.md) can supply this mac
 
 Codex's native `modelProvider/capabilities/read` can advertise provider-level image generation without starting a model turn. It does not identify the image backend, prove access on every model, or implement an artifact adapter. Older clients may not support this metadata method; unknown stays unknown. A model catalog's image input modality and a CLI's `--image` attachment flag do not establish image output.
 
-The cross-provider CLI adapters currently return **text only**. Their model catalogs are useful for text delegation, not a list of image generators. A native or connected tool must expose the required operation and a usable output path. A chat hosted by Claude can have such a tool through a connector; do not exclude it solely because the language model does not itself emit pixels.
+The cross-provider text adapters return **text only**. Their model catalogs are useful for text delegation, not a list of image generators. The separate [Codex image bridge](codex-image-bridge.md) implements a native image artifact path with explicit selection and independent output checks. Probe that bridge before treating it as eligible; its presence does not establish account access. A native or connected tool must expose the required operation and a usable output path. A chat hosted by Claude can have such a tool through a connector; do not exclude it solely because the language model does not itself emit pixels.
 
 ## Export a host-tool snapshot
 
