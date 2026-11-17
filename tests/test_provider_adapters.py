@@ -167,6 +167,7 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_codex_live_catalog_only_uses_metadata_rpc_and_paginates(self):
         calls = []
+        capability_timeouts = []
 
         class Rpc:
             def __init__(self, argv):
@@ -181,6 +182,10 @@ class DiscoveryTests(unittest.TestCase):
                 calls.append((method, params))
                 if method == "initialize":
                     return {}
+                if method == "modelProvider/capabilities/read":
+                    capability_timeouts.append(timeout)
+                    return {"imageGeneration": True, "webSearch": False, "namespaceTools": True,
+                            "accessToken": "NOT-PUBLIC"}
                 if params.get("cursor") == "next":
                     return {"data": [{"model": "second", "supportedReasoningEfforts": [], "isDefault": False}], "nextCursor": None}
                 return {"data": [{"model": "first", "supportedReasoningEfforts": [{"reasoningEffort": "low"}],
@@ -190,7 +195,82 @@ class DiscoveryTests(unittest.TestCase):
             result = module._codex_live_models("/test/codex")
         self.assertEqual([item["id"] for item in result["models"]], ["first", "second"])
         self.assertEqual(result["source"], "codex_cli_app_server_model_list")
-        self.assertEqual([name for name, _ in calls], ["argv", "initialize", "initialized", "model/list", "model/list"])
+        self.assertEqual([name for name, _ in calls], ["argv", "initialize", "initialized", "model/list", "model/list", "modelProvider/capabilities/read"])
+        caps = result["native_capabilities"]
+        self.assertEqual(caps["status"], "advertised")
+        self.assertTrue(caps["image_generation"])
+        self.assertFalse(caps["web_search"])
+        self.assertEqual(caps["scope"], "provider")
+        self.assertFalse(caps["execution_verified"])
+        self.assertNotIn("NOT-PUBLIC", json.dumps(result))
+        self.assertEqual(len(capability_timeouts), 1)
+        self.assertTrue(0 < capability_timeouts[0] <= 5)
+        self.assertTrue(all("image_generation" not in item for item in result["models"]))
+
+    def test_optional_codex_capability_failure_keeps_live_models_and_unknown_output(self):
+        class Rpc:
+            def __init__(self, argv):
+                pass
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+            def notify(self, *args):
+                pass
+            def request(self, method, params, timeout):
+                if method == "initialize":
+                    return {}
+                if method == "modelProvider/capabilities/read":
+                    raise RuntimeError("Unsupported method")
+                if method == "model/list":
+                    return {"data": [{"model": "input-vision", "inputModalities": ["text", "image"],
+                                      "supportedReasoningEfforts": []}], "nextCursor": None}
+                raise AssertionError("Discovery must not start a thread or inference")
+
+        with patch.object(module, "_rpc_client_class", return_value=Rpc), \
+                patch.object(module, "_codex_models") as cache:
+            record = discover("codex", True)
+        cache.assert_not_called()
+        self.assertTrue(record["dispatch_ready"])
+        self.assertTrue(record["account_catalog"])
+        self.assertEqual(record["models"][0]["id"], "input-vision")
+        self.assertEqual(record["native_capabilities"]["status"], "unknown")
+        self.assertIsNone(record["native_capabilities"]["image_generation"])
+        self.assertEqual(record["adapter_capabilities"], ["text_generation"])
+
+    def test_input_vision_and_nonboolean_metadata_never_advertise_generation(self):
+        class Rpc:
+            def request(self, method, params, timeout):
+                return {"inputModalities": ["text", "image"], "imageGeneration": "true",
+                        "webSearch": 1, "namespaceTools": None, "secret": "NOT-PUBLIC"}
+
+        result = module._codex_native_capabilities(Rpc(), 3)
+        self.assertEqual(result["status"], "unknown")
+        self.assertIsNone(result["image_generation"])
+        self.assertIsNone(result["web_search"])
+        self.assertIsNone(result["namespace_tools"])
+        self.assertNotIn("NOT-PUBLIC", json.dumps(result))
+
+    def test_provider_capability_true_does_not_expand_registered_text_adapter(self):
+        native = {"status": "advertised", "source": "native_metadata", "scope": "provider",
+                  "image_generation": True, "web_search": True, "namespace_tools": True,
+                  "execution_verified": False}
+        live = {"source": "codex_cli_app_server_model_list", "models": [module._model("chat", "live")],
+                "warnings": [], "native_capabilities": native}
+        with patch.object(module, "_codex_live_models", return_value=live):
+            record = discover("codex", True)
+        self.assertTrue(record["native_capabilities"]["image_generation"])
+        self.assertFalse(record["native_capabilities"]["execution_verified"])
+        self.assertEqual(record["adapter_capabilities"], ["text_generation"])
+        self.assertNotIn("image_generation", record["adapter_capabilities"])
+
+    def test_unqueried_provider_image_support_is_unknown_instead_of_absent(self):
+        for name in module.PROVIDERS:
+            with self.subTest(provider=name):
+                record = discover(name)
+                self.assertEqual(record["adapter_capabilities"], ["text_generation"])
+                self.assertEqual(record["native_capabilities"]["status"], "unknown")
+                self.assertIsNone(record["native_capabilities"]["image_generation"])
 
     def test_codex_discovery_prefers_destination_cli_over_cache(self):
         live = {"source": "codex_cli_app_server_model_list", "models": [module._model("actual", "live", efforts=["low"], scope="model_catalog")], "warnings": []}

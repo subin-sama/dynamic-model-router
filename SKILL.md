@@ -1,11 +1,11 @@
 ---
 name: dynamic-model-router
-description: Discover the current user's installed AI providers, ask about additional providers, and select provider, model, and native reasoning settings by task. Supports Codex, Claude Code, Antigravity, and Gemini CLI through their actual controls, with checked separate CLI runs when authorized.
+description: Discover this user's AI providers and exposed tools, match task capabilities, offer choices for specialized outputs, and select provider, model, and native reasoning settings through supported host controls.
 ---
 
 # Dynamic Model Router
 
-Choose an appropriate model AND its native reasoning setting for the work about to run. Reassess as the work changes. Use real runtime controls when available; distinguish a recommendation from an applied setting.
+Match the task's required capabilities to a reachable provider/tool, then choose an appropriate model AND its native reasoning setting where exposed. Reassess as the work changes. Use real runtime controls when available; distinguish a recommendation from an applied setting.
 
 ## Discover this user's machine first
 
@@ -24,6 +24,12 @@ Separate **detected**, **dispatch-ready**, **account-access tested**, **runtime 
 ## Capability check
 
 At activation, identify the host, its exposed controls, current settings if observable, and explicit user constraints. Read only that host's section of [references/hosts.md](references/hosts.md). Reuse this capability snapshot until the host changes or rejects a selection.
+
+Identify what the requested result requires before ranking providers: text, image generation/editing, image understanding, audio, video, or another tool capability. Check the current host's actual tool schemas and supported native capability catalogs as well as installed CLIs. Separate model capability from a reachable tool and its output path. Image input/vision does not imply image generation; a provider name, model description, app installation, or a higher effort setting is not sufficient evidence. A Claude-hosted chat may have a connected image tool, so inspect its tools before declaring the whole host unable to create images.
+
+For a required capability the current route lacks, discover qualified alternatives on this user's machine and connected host. Use `cross_cli_router.py capabilities` with a fresh tool snapshot as described in [capability routing](references/capability-routing.md). For specialized tool/output routing, if more than one distinct eligible route remains and the user has not already selected one, show the provider, exposed model or "not exposed", tool/channel, and evidence/availability limits in the user's language, then ask them to choose. Do not call a generator or send their task to a candidate while the choice is pending. Honor an explicit compatible selection; one eligible route can proceed within the original task authorization. With no eligible route, explain the missing tool, login, or adapter and offer concrete setup/handoff choices without silently substituting a text answer for the requested artifact.
+
+Re-resolve a chosen tool in the executing host before calling it. A declared capability or provider metadata is not successful generation, account entitlement, or a remote invocation bridge. Report discovery-only routes separately from usable choices; never feed an artifact task into the text-only CLI dispatcher. Keep the parent responsible for orchestration and hand off only the task/context needed. This chooser does not require a choice for ordinary text routing that the user already authorized to be automatic.
 
 Use the host's current tool schema, account-visible catalog, or configured agent definitions as the source of model IDs and settings. Official provider documentation describes capabilities but does not prove account access. A cached catalog is a planning hint. For Codex only, `python3 scripts/inspect_models.py` inspects the local model cache without contacting a service or reading credentials.
 

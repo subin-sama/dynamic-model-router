@@ -69,6 +69,20 @@ Global activation makes this policy part of the host's user instructions. **Actu
 
 Read [SKILL.md](SKILL.md) for the portable policy and [host capabilities](references/hosts.md) for runtime boundaries.
 
+## Find a tool that can produce the requested output
+
+Version **0.7.0** adds capability discovery and a user-choice gate for specialized outputs. Before ranking models, the skill checks whether the task needs image generation, image editing, image understanding, audio or video, and looks for an actual reachable tool. Image input support does not imply image generation. A connected tool can provide a capability that the chat's language model does not supply on its own.
+
+With multiple eligible routes, the agent shows their provider, exposed model (or "not exposed"), tool/channel and evidence limits, then asks the user to choose before invoking one. An existing explicit choice is retained. One eligible route can proceed within the original task authorization; no eligible route produces a clear missing-tool/handoff result. Ordinary authorized text routing remains automatic.
+
+```sh
+python3 "$SKILL_DIR/scripts/cross_cli_router.py" capabilities \
+  --inventory work/providers.json --required image_generation \
+  --host-tools work/host-tools.json --output work/image-options.json
+```
+
+The hosting agent exports `host-tools.json` from its currently available tool schemas; it is not a universal installed-model list. Codex's optional native capability query can also report provider-level image support without inference, separately from usable tool choices. The CLI's text dispatcher deliberately rejects image/audio/video plans; this feature does not create a missing cross-app artifact bridge. See [capability evidence, snapshots and choice handling](references/capability-routing.md).
+
 ## Discover providers and route work across CLIs
 
 Version **0.6.0** adds a separate text-work controller for **Claude Code, Antigravity (`agy`), Codex, and Gemini CLI**. The hosting agent assesses the task, discovers what is available on the current user's machine, and selects a supported provider/model/effort pair. It does not borrow the author's installed paths or model catalog.
@@ -174,7 +188,7 @@ This separate **read-only text prototype** uses native CLI flags between turns w
 
 ## Validation and development
 
-The repository has **188 Python tests and 53 Node tests**, all passing in the 0.6.0 check. The Node suite covers preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
+The repository has **226 Python tests and 53 Node tests**, all passing in the 0.7.0 check. Capability tests distinguish output from input, enforce user choice and reject artifact plans before text dispatch. The Node suite covers preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
 
 Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 

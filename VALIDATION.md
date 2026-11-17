@@ -1,10 +1,10 @@
 # Validation
 
-Last checked: 2026-11-05. The repository includes a portable skill, a one-command global installer, catalog discovery, optional same-parent clients, and a separate cross-provider text-work controller. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
+Last checked: 2026-11-17. The repository includes a portable skill, a one-command global installer, catalog/capability discovery, a specialized-tool chooser, optional same-parent clients, and a separate cross-provider text-work controller. Installation writes persistent user-wide routing instructions for supported local agents. It does not run a background service or install a hook into the current desktop composer.
 
 ## Offline tests
 
-**188 Python tests passed** on the development host:
+**226 Python tests passed** on the development host:
 
 | Component | Tests | Coverage |
 | --- | ---: | --- |
@@ -15,7 +15,9 @@ Last checked: 2026-11-05. The repository includes a portable skill, a one-comman
 | Routing receipts | 5 | Compact output, unknown values, truthful Codex and Antigravity verified/unverified/error outcomes, scope and evidence qualifiers |
 | Answer validator | 8 | Strict checker results, unavailable/error states, literal command arguments, deadlines, bounded I/O, process cleanup and repair-budget validation |
 | Cross-provider controller | 43 | Per-machine onboarding, provider changes, task preferences, exact locks, missing auth, stale plans, native Gemini values, timeout cleanup, private diagnostics, separate answer/runtime outcomes |
-| CLI provider adapters | 37 | Destination CLI catalogs, auth metadata filtering, native argument construction, Gemini settings, actual result shapes, error classification, aliases and partial runtime evidence |
+| CLI provider adapters | 41 | Destination CLI catalogs, optional provider capability metadata, auth filtering, native arguments, Gemini settings, actual result shapes, error classification, aliases and partial runtime evidence |
+| Capability selection engine | 22 | Output/input distinctions, multiple/single/no candidates, exact locks, hidden/unavailable interfaces, route-scoped authentication, duplicate observations and discovery-only native flags |
+| Capability CLI integration | 12 | Specialized task classification, pending/explicit choices, schema snapshots, wrong-machine rejection, unchanged text selection and artifact rejection before dispatch |
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -27,7 +29,7 @@ The offline tests do not call Codex or a provider. Skill-creator structural vali
 
 ### One-command installer
 
-The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 188 Python tests, the repository has **241 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
+The Node installer and launcher have **53 passing tests**: 37 preservation/ownership/CLI/integration cases, 13 host-adapter cases, and 3 launcher cases. Together with the 226 Python tests, the repository has **279 offline checks**. Tests cover original bytes and file modes, Unicode/BOM/CRLF, missing final newlines, backups, idempotency, effective override files, custom profile roots, Gemini comments and context filenames, shared payloads, legacy manual copies, Antigravity detection and shadow-copy conflicts, symlink changes, concurrent edits, rollback, safe updates, uninstall retaining newer user edits, literal launcher arguments, and child exit propagation.
 
 The npm tarball was installed through `npx --package=file:... dynamic-model-router --home <staging> --agents all`. All six global instruction targets were configured with their original byte prefixes retained and one managed block each. An Antigravity-only installation was also checked independently of the other adapters. Second runs made zero changes. Packaged uninstall retained the originals and user instructions added after installation. These are real installation/filesystem tests, not provider or model calls.
 
@@ -58,9 +60,23 @@ The new controller was exercised on macOS using a small sorting/arithmetic task 
 
 Live testing exposed a difference between the desktop Codex cache and the standalone CLI's catalog. The adapter now queries the destination CLI's `model/list` first; after correcting the model selection, its real invocation passed. Antigravity's actual `SUCCESS`/`response` JSON shape is covered by regression tests. Its plan mode is preserved by not combining it with the slash-expansion disabling flag. Gemini's structured startup errors on stderr are classified as prerequisites, not reasoning failures.
 
-The first installed-skill subset had 127 passing Python tests. The 188-test count above is the complete repository suite, including existing parent clients and validators. An independent forward review of a new user's machine passed: detect that machine's CLIs first, distinguish an installed app from a usable CLI, ask about additional providers, and do not infer setup permission from an optional unanswered question.
+The first installed-skill subset had 127 passing Python tests; the complete 0.6.0 repository suite had 188. An independent forward review of a new user's machine passed: detect that machine's CLIs first, distinguish an installed app from a usable CLI, ask about additional providers, and do not infer setup permission from an optional unanswered question.
 
 CLI presence, dispatch controls, account access, effective settings, and answer acceptance remain separate statuses. The controller does not change the current parent model, silently weaken native restrictions, install another provider, or retry external actions. Gemini native configuration is tested offline; successful live Gemini and Claude inference still require authentication. Linux and Windows live provider execution was not tested in this pass.
+
+## Capability discovery and user choice (0.7.0)
+
+The policy now identifies required output/tool capabilities before ranking providers. A current tool snapshot drives `capabilities` and specialized `plan --requires` decisions. Multiple distinct eligible interfaces require a user choice unless already selected; zero eligible interfaces yields `blocked` with reasons. Exact backend model IDs stay unknown when unexposed. Native provider metadata is discovery-only until a callable output interface exists. The text runner rejects artifact/tool plans before any provider discovery or process invocation.
+
+On 2026-11-17, read-only discovery found the installed Claude, Antigravity and Codex CLIs on the development machine; Gemini CLI was absent. Codex's native `modelProvider/capabilities/read` reported image generation, web search and namespace tools, without a thread or inference. This advertises provider capability, not a per-model image backend, account entitlement or successful image generation. Unsupported/malformed optional metadata preserves a valid model catalog and returns unknown capability flags.
+
+The current Codex host exposed two distinct image interfaces in tool metadata: native `image_gen__imagegen` and Canva's `generate_image`. A snapshot of those real visible schemas produced `choice_required` with no selected candidate and no dispatch authorization. Both backend model IDs stayed unknown. Removing the snapshot produced `blocked`, with the Codex provider flag kept separately as non-dispatchable discovery evidence. A synthetic explicit candidate selection resolved to `ready`, and the text runner rejected that plan. No real user choice was recorded, no preference was changed, and no image generation or provider inference was performed for these checks. Tools visible in this host are not thereby available to a separate Claude or Antigravity process.
+
+Independent forward-testing also exercised a Claude-hosted image request with two mock image tools, provider metadata only, an explicit selected tool, and vision/input-only models. All four outcomes matched the declared interface/choice boundaries. Six execution guard probes and two top-level `run --execute` probes stopped before provider/process entrypoints. A discovered duplicate-observation case was fixed and independently rechecked: the same provider/tool/model with differing capability declarations no longer appears as two choices. Distinct explicit models can remain separate routes.
+
+These checks establish discovery, filtering and choice behavior, not generated-image quality or account access. The hosting agent still classifies the user's semantic requirements and must resolve the selected tool in the executing host. A missing cross-app bridge is not created by a manifest or skill installation. See [capability routing](references/capability-routing.md) for the snapshot schema and host handoff contract.
+
+The 0.7.0 npm tarball passed isolated fresh installation and upgrade from committed 0.6.0 across all six adapters, with exact outside-block bytes/backups, bundled-module imports, chooser help, zero-change reinstall and exact original-file restoration on uninstall. Development Codex, Claude Code and Antigravity activation was also updated with original instruction bytes preserved outside one managed block per file. Prior manually updated product files were backed up before reconciling installer ownership hashes; the manual Codex copy remained unowned and its unrelated local documentation was preserved. A repeat global setup made zero changes.
 
 ## Live native-worker test
 

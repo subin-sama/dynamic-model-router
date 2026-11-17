@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Read-only CLI discovery, safe argv construction, and runtime evidence parsing.
 
-Discovery never sends a prompt. ``include_models=True`` permits the documented
-Antigravity catalog request; other catalogs are read locally. Model aliases and
-cached metadata do not establish account entitlement or effective runtime values.
+Discovery never sends a prompt. ``include_models=True`` permits Antigravity's
+catalog request and Codex's native model/capability metadata requests. Model
+aliases and advertised capabilities do not establish account entitlement,
+artifact-dispatch support, or effective runtime values.
 The caller owns execution, timeouts, temporary files, and result acceptance.
 """
 
@@ -136,6 +137,35 @@ def _rpc_client_class():
     return module.RpcClient
 
 
+def _unknown_native_capabilities(source=None):
+    """Keep provider capability metadata separate from the text adapter contract."""
+    return {"status": "unknown", "source": source, "scope": "provider",
+            "image_generation": None, "web_search": None, "namespace_tools": None,
+            "execution_verified": False}
+
+
+def _codex_native_capabilities(rpc, timeout):
+    source = "codex_cli_app_server_model_provider_capabilities"
+    result = _unknown_native_capabilities(source)
+    try:
+        raw = rpc.request("modelProvider/capabilities/read", {}, timeout=timeout)
+    except (OSError, RuntimeError, TimeoutError, ValueError):
+        # Older clients need not implement this optional method. Never turn a
+        # successful model list into a cache fallback because of this request.
+        return result
+    if not isinstance(raw, dict):
+        return result
+    fields = {"imageGeneration": "image_generation", "webSearch": "web_search",
+              "namespaceTools": "namespace_tools"}
+    for native, public in fields.items():
+        if isinstance(raw.get(native), bool):
+            result[public] = raw[native]
+            result["status"] = "advertised"
+    # These booleans are provider-wide advertisements, not an image-model ID,
+    # proof for each listed model, or permission to run artifact generation.
+    return result
+
+
 def _codex_live_models(executable: str) -> Dict[str, Any]:
     """Query the destination CLI's catalog; no thread or inference is started."""
     client_class = _rpc_client_class()
@@ -148,6 +178,7 @@ def _codex_live_models(executable: str) -> Dict[str, Any]:
         return min(10, value)
 
     raw_models, cursor, cursors = [], None, set()
+    native_capabilities = _unknown_native_capabilities()
     with client_class([executable, "app-server", "--listen", "stdio://"]) as rpc:
         rpc.request("initialize", {"clientInfo": {"name": "dynamic-model-router-discovery", "version": "0.1.0"},
                                    "capabilities": {"experimentalApi": True}}, timeout=remaining())
@@ -170,6 +201,14 @@ def _codex_live_models(executable: str) -> Dict[str, Any]:
             cursors.add(cursor)
         else:
             raise AdapterError("Live CLI model pagination did not finish")
+        try:
+            capability_timeout = min(5, remaining())
+        except AdapterError:
+            # Catalog discovery owns the overall deadline; the optional
+            # capability probe cannot extend it after valid pages arrived.
+            capability_timeout = None
+        if capability_timeout is not None:
+            native_capabilities = _codex_native_capabilities(rpc, capability_timeout)
     models, seen, duplicate = [], set(), set()
     for raw in raw_models:
         if not isinstance(raw, dict):
@@ -204,6 +243,7 @@ def _codex_live_models(executable: str) -> Dict[str, Any]:
     if not models:
         raise AdapterError("Live CLI catalog contains no unambiguous supported models")
     return {"models": models, "source": "codex_cli_app_server_model_list",
+            "native_capabilities": native_capabilities,
             "warnings": ["Live CLI catalog advertises available choices; successful inference remains unverified"]}
 
 
@@ -277,6 +317,8 @@ def discover_provider(name: str, include_models: bool = False) -> Dict[str, Any]
     executable = shutil.which(name)
     record = {"id": name, "executable": executable, "available": bool(executable),
               "dispatch_ready": False, "version": None, "models": [],
+              "adapter_capabilities": ["text_generation"],
+              "native_capabilities": _unknown_native_capabilities(),
               "native_efforts": [], "controls": {}, "warnings": [],
               "catalog_source": None, "account_catalog": False,
               "authentication": {"status": "unknown"},
@@ -325,6 +367,7 @@ def discover_provider(name: str, include_models: bool = False) -> Dict[str, Any]
                     catalog = _codex_models()
                     record["warnings"].append("Live CLI catalog unavailable; cache may belong to another client and does not establish CLI compatibility")
                 record["models"] = catalog["models"]
+                record["native_capabilities"] = catalog.get("native_capabilities", _unknown_native_capabilities())
                 record["catalog_source"] = catalog["source"]
                 record["catalog_freshness"] = catalog.get("freshness", {"status": "live_cli_query"})
                 record["warnings"].extend(catalog["warnings"])

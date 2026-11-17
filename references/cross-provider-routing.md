@@ -62,6 +62,8 @@ failure, CLI upgrade, or provider change. Do not loop on failed authentication.
 
 ## Choose a task-specific pair
 
+Check required output/tool capabilities before ranking text models. Use the [capability chooser](capability-routing.md) for image generation/editing, audio, video or other specialized work. `capabilities` and `plan --requires` can return `choice_required`, `ready`, or `blocked` from a current host-tool snapshot. Multiple eligible specialized routes require a user choice unless already explicitly selected. These are tool handoff plans; the text-only `run` dispatcher rejects them before inference. Provider-level capability metadata is discovery evidence, not an image model list or an artifact adapter.
+
 The hosting agent determines `light`, `standard`, `deep`, or `intensive` using
 the skill's difficulty/acceptance criteria. The controller does not guess task
 difficulty from prompt length or count files. Choose meaningful `task-kind`

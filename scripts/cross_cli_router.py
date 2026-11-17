@@ -23,6 +23,7 @@ import time
 from datetime import datetime, timezone
 
 import provider_adapters as adapters
+import task_capabilities as capabilities
 
 
 PROVIDERS = ("claude", "agy", "codex", "gemini")
@@ -35,6 +36,12 @@ ROLE_HINTS = {
     "standard": ("general", "balanced", "versatile", "everyday", "workhorse"),
     "deep": ("complex", "reasoning", "demanding", "advanced", "frontier"),
     "intensive": ("most capable", "strongest", "most demanding", "frontier"),
+}
+ARTIFACT_TASKS = {
+    "image_generation": "image_generation", "image-generation": "image_generation",
+    "image_editing": "image_editing", "image-editing": "image_editing",
+    "audio_generation": "audio_generation", "audio-generation": "audio_generation",
+    "video_generation": "video_generation", "video-generation": "video_generation",
 }
 
 
@@ -182,14 +189,34 @@ def effort_for(record, model, complexity, lock=None):
     return None, "default_unexposed"
 
 
+def required_for_task(task_kind, required=None):
+    inferred = ARTIFACT_TASKS.get(task_kind)
+    values = capabilities.normalize_required(required if required is not None else [inferred or "text_generation"])
+    # An explicit task kind cannot be downgraded into a text-only plan.
+    if inferred and inferred not in values:
+        values = capabilities.normalize_required(values + [inferred])
+    return values
+
+
 def select_plan(inventory, *, complexity="standard", task_kind="general", provider=None,
-                model=None, effort=None, preferences=None, current_provider=None):
+                model=None, effort=None, preferences=None, current_provider=None,
+                required_capabilities=None, host_tools=None, candidate=None):
     if complexity not in COMPLEXITIES:
         raise RouterError("Unsupported task complexity")
-    if provider is not None and provider not in PROVIDERS:
-        raise RouterError("Provider has no installed adapter; discover and set it up first")
     if model is not None and provider is None:
         raise RouterError("A model lock requires its provider; model IDs are not universal")
+    required = required_for_task(task_kind, required_capabilities)
+    if required != ["text_generation"] or candidate is not None:
+        if effort is not None:
+            raise RouterError("Capability tool routes do not expose this effort lock; do not silently drop it")
+        result = capabilities.select_capability_route(inventory, required, host_tools=host_tools,
+                                                     provider=provider, model=model, candidate=candidate)
+        return {"schema_version": 1, "created_at": now(), "machine_key": inventory["machine_key"],
+                "kind": "capability_route", "scope": "tool-handoff", "routing_status": "recommended",
+                "complexity": complexity, "task_kind": task_kind, "parent_settings_changed": False,
+                "text_dispatch_supported": False, **result}
+    if provider is not None and provider not in PROVIDERS:
+        raise RouterError("Provider has no installed adapter; discover and set it up first")
     preferences = preferences or {}
     preferred = preferences.get("task_provider_order", {}).get(task_kind, [])
     if not isinstance(preferred, list) or any(p not in PROVIDERS for p in preferred):
@@ -231,6 +258,7 @@ def select_plan(inventory, *, complexity="standard", task_kind="general", provid
         "scope": "external-run", "routing_status": "recommended",
         "provider": record["id"], "model": model_id(entry), "effort": selected_effort,
         "complexity": complexity, "task_kind": task_kind,
+        "required_capabilities": required,
         "locks": {"provider": provider, "model": model, "effort": effort},
         "model_source": entry.get("source", record.get("model_source", "configured_default")),
         "effort_support_scope": scope,
@@ -279,6 +307,10 @@ def bounded_process(command, timeout):
 def execute_plan(plan, prompt, *, timeout=180, expected=None, record=None, scratch_root=None, diagnostics_dir=None):
     if plan.get("machine_key") != machine_key():
         raise RouterError("Plan belongs to another machine; discover this machine first")
+    required = required_for_task(plan.get("task_kind"), plan.get("required_capabilities"))
+    if (required != ["text_generation"] or plan.get("kind") == "capability_route"
+            or plan.get("status") in ("choice_required", "blocked")):
+        raise RouterError("This runner returns text only. Resolve the capability choice and use the selected host tool; no inference was sent")
     pid = plan.get("provider")
     if pid not in PROVIDERS:
         raise RouterError("No supported provider adapter")
@@ -362,11 +394,23 @@ def parser():
     s.add_argument("--inventory", type=Path, required=True)
     s.add_argument("--complexity", choices=COMPLEXITIES, default="standard")
     s.add_argument("--task-kind", default="general")
-    s.add_argument("--provider", choices=PROVIDERS)
+    s.add_argument("--provider", help="Installed CLI provider, or a provider in the host-tool snapshot")
     s.add_argument("--model")
     s.add_argument("--effort")
     s.add_argument("--current-provider", choices=PROVIDERS)
+    s.add_argument("--requires", action="append", choices=capabilities.CAPABILITIES,
+                   help="Required output/tool capability; repeat for combined requirements")
+    s.add_argument("--host-tools", type=Path, help="Current host's tool-schema snapshot; data only, never executable commands")
+    s.add_argument("--candidate", help="Exact capability candidate selected by the user")
     s.add_argument("--output", type=Path)
+    c = sub.add_parser("capabilities", help="Filter reachable tool capabilities and request a choice when several match; no inference")
+    c.add_argument("--inventory", type=Path, required=True)
+    c.add_argument("--required", action="append", choices=capabilities.CAPABILITIES, required=True)
+    c.add_argument("--host-tools", type=Path)
+    c.add_argument("--provider")
+    c.add_argument("--model")
+    c.add_argument("--candidate")
+    c.add_argument("--output", type=Path)
     r = sub.add_parser("run", help="Run an authorized text handoff in an isolated temporary directory")
     r.add_argument("--plan", type=Path, required=True)
     r.add_argument("--task-file", type=Path, required=True)
@@ -400,13 +444,19 @@ def main(argv=None):
             state = record_onboarding(state, inv, args.answer, args.extra)
             write_json(args.state, state)
             result = onboarding_status(inv, state)
-        elif args.command == "plan":
+        elif args.command in ("plan", "capabilities"):
             inv = read_json(args.inventory)
             if inv.get("machine_key") != machine_key():
                 raise RouterError("Discover this machine before planning")
-            result = select_plan(inv, complexity=args.complexity, task_kind=args.task_kind,
-                                 provider=args.provider, model=args.model, effort=args.effort,
-                                 preferences=state.get("preferences"), current_provider=args.current_provider)
+            host_tools = read_json(args.host_tools) if args.host_tools else None
+            if args.command == "capabilities":
+                result = capabilities.select_capability_route(inv, args.required, host_tools=host_tools,
+                                                              provider=args.provider, model=args.model, candidate=args.candidate)
+            else:
+                result = select_plan(inv, complexity=args.complexity, task_kind=args.task_kind,
+                                     provider=args.provider, model=args.model, effort=args.effort,
+                                     preferences=state.get("preferences"), current_provider=args.current_provider,
+                                     required_capabilities=args.requires, host_tools=host_tools, candidate=args.candidate)
         elif args.command == "run":
             plan = read_json(args.plan)
             result = execute_plan(plan, args.task_file.read_text(encoding="utf-8"), timeout=args.timeout, expected=args.expected, scratch_root=args.scratch_root, diagnostics_dir=args.diagnostics_dir) if args.execute else {"dispatch": "not_requested", "plan": plan}
