@@ -12,6 +12,8 @@ npx --yes github:subin-sama/dynamic-model-router
 
 The command detects supported agents, installs the skill, backs up their existing global instruction files, and adds an identifiable routing block for **every task in every project**. You do not need to edit `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` yourself. Existing user content, including non-English text, stays intact.
 
+For Claude Code, version **0.8.0** also installs a native `UserPromptSubmit` hook that performs read-only machine discovery and supplies a compact routing policy/snapshot before Claude responds. This fixes reliance on the model choosing to open the skill by itself. Existing settings, permissions and hooks are preserved. Python 3.9+ is needed for metadata discovery; cached, missing and unavailable evidence is labeled explicitly. See [native Claude activation](references/claude-activation.md).
+
 To configure all six supported agents, including ones not yet installed:
 
 ```bash
@@ -122,7 +124,7 @@ For an authorized real invocation check:
 python3 "$SKILL_DIR/scripts/cross_cli_router.py" smoke --inventory work/providers.json --scratch-root work --execute --output work/smoke.json
 ```
 
-The recorded smoke checks passed for Codex and Antigravity. Claude and Gemini could not complete inference because authentication was missing. The successful CLI outputs did not expose effective model/effort fields, so those runtime pairs remain **unverified**, separately from the passed answer checks. See [validation](VALIDATION.md#cross-provider-invocation-checks-2026-11-05).
+The November 5 text-controller smoke checks passed for Codex and Antigravity; Claude and Gemini stopped at missing authentication. Those successful CLI outputs did not expose effective model/effort fields, so the pairs remain **unverified**, separately from answer checks. Later Claude native-hook probes completed inference and confirmed automatic discovery plus a handoff question before generation; they did not establish multiple executable image routes. See [text-controller checks](VALIDATION.md#cross-provider-invocation-checks-2026-11-05) and [Claude activation results](VALIDATION.md#native-claude-code-activation-080).
 
 ## Check answers before accepting them
 
@@ -188,7 +190,7 @@ This separate **read-only text prototype** uses native CLI flags between turns w
 
 ## Validation and development
 
-The repository has **226 Python tests and 53 Node tests**, all passing in the 0.7.0 check. Capability tests distinguish output from input, enforce user choice and reject artifact plans before text dispatch. The Node suite covers preservation, overrides, repeat installation, ownership, symlinks, rollback, and uninstall. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
+The repository has **226 Python tests and 95 Node tests**, all passing in the 0.8.0 check. Capability tests distinguish output from input, enforce user choice and reject artifact plans before text dispatch. Native Claude tests cover activation, private metadata caching, settings preservation and bounded child cleanup. Separate live checks cover Codex workers, same-parent routing, and the cross-provider invocation results described above. The earlier Codex same-parent test selected **Luna/low → Sol/high → Luna/low**, with matching runtime settings and retained history. See [VALIDATION.md](VALIDATION.md).
 
 Antigravity CLI **1.4.3 was live-tested** in two separate modes. The skill-only test produced recommendations without changing runtime; the added external parent client selected and applied native variants between turns successfully. Antigravity global activation paths are checked against official documentation; App and IDE runtime routing remain untested. See [the live-test evidence](VALIDATION.md#live-antigravity-parent-test).
 

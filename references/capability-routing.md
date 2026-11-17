@@ -6,6 +6,8 @@ Use this workflow when the task needs a specific tool or output modality, especi
 
 Run the normal provider discovery first. Inspect the current host's callable tools, connected plugins and native capability catalogs. Do not scan credentials, dump MCP environment values, or run a paid inference just to populate a menu. Reuse a current snapshot; refresh when the host, tools, provider versions or availability change.
 
+Claude Code's [native activation hook](claude-activation.md) can supply this machine snapshot before the model responds. Use it alongside current-host tool discovery; MCP tool search alone is not a local-provider inventory. A failed search does not prove missing authentication. When no generator is callable but an installed provider advertises image support, present a clearly labeled handoff possibility and its missing bridge instead of treating the provider as absent or recommending unrelated setup.
+
 Codex's native `modelProvider/capabilities/read` can advertise provider-level image generation without starting a model turn. It does not identify the image backend, prove access on every model, or implement an artifact adapter. Older clients may not support this metadata method; unknown stays unknown. A model catalog's image input modality and a CLI's `--image` attachment flag do not establish image output.
 
 The cross-provider CLI adapters currently return **text only**. Their model catalogs are useful for text delegation, not a list of image generators. A native or connected tool must expose the required operation and a usable output path. A chat hosted by Claude can have such a tool through a connector; do not exclude it solely because the language model does not itself emit pixels.

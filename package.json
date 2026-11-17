@@ -1,6 +1,6 @@
 {
   "name": "dynamic-model-router",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Discover installed AI providers and route tasks with native model and reasoning controls, preserving global instructions.",
   "license": "MIT",
   "repository": {

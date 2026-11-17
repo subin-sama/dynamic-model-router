@@ -7,6 +7,22 @@ description: Discover this user's AI providers and exposed tools, match task cap
 
 Match the task's required capabilities to a reachable provider/tool, then choose an appropriate model AND its native reasoning setting where exposed. Reassess as the work changes. Use real runtime controls when available; distinguish a recommendation from an applied setting.
 
+## Claude Code automatic activation
+
+The global installer adds a native `UserPromptSubmit` hook for Claude Code when the installed runtime is present. It performs bounded read-only provider discovery and injects the brief policy below plus a compact machine snapshot before the model responds. Reuse a valid snapshot rather than immediately repeating discovery; cached evidence is a planning hint and selected interfaces still need rechecking. Read [Claude activation](references/claude-activation.md) for hook/cache limits and native evidence.
+
+<!-- claude-activation:begin -->
+Use dynamic-model-router for this request. The native hook's machine snapshot is real CLI discovery, not a list of MCP tools; use both sources. Read the remaining SKILL.md policy when selecting model/effort or performing a handoff.
+
+Identify the capability required by the requested output. For images/media, inspect this host's actual callable tools using specific visible namespaces, then combine that evidence with the machine snapshot. No MCP search match does not prove that a local provider is absent or that a connector needs login. Image input is not image output. Keep unsupported, unknown and advertised-only capabilities distinct.
+
+Use current tool schemas/results and the labeled snapshot as evidence. Restored summaries and earlier assistant statements are not fresh capability or access checks. Claim missing login only after an actual current authentication error/status for that exact interface; otherwise say access is untested. Do not infer connector support from its name or suggest new connector endpoints without verified capability evidence.
+
+For multiple qualified executable routes, name provider, exposed model (or "not exposed"), tool and evidence, then ask the user to choose and wait. Honor a compatible explicit choice. If no callable route exists but a discovered local provider advertises the capability, keep the reply brief: identify that provider, distinguish its advertised support from the missing artifact bridge, and ask whether the user wants to hand off there and recheck the native tool. Do not offer unrelated connector setup, new providers, prompt writing or code/ASCII substitutes unless requested. Do not imply a handoff has already happened or that the provider's native generator was tested. Never dispatch through the text-only runner to create media, or generate while a choice is pending.
+
+Preserve explicit provider/model/effort locks and use only permitted controls. Report selection, runtime settings, access and output validation separately. Discovery success is not generation success or a verified backend model. Localize the receipt and choices to the user's language.
+<!-- claude-activation:end -->
+
 ## Discover this user's machine first
 
 Do not assume this machine has the author's providers, paths, accounts, or models. At first activation on a machine, and when capabilities change, run `scripts/cross_cli_router.py discover`. It checks the current PATH and installed CLI controls without inference or credential inspection. App installation alone is not dispatch readiness. For authorized cross-provider routing, add `--models` to inspect supported local catalogs and Antigravity's model-list command; this may contact the signed-in provider for metadata. A catalog does not establish entitlement or successful execution.

@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolveAdapters } from './adapters.mjs';
+import { CLAUDE_HOOK_RUNTIME, claudeHook, changeClaudeHook } from './claude-hooks.mjs';
 
 export const BEGIN = '<!-- dynamic-model-router:begin -->';
 export const END = '<!-- dynamic-model-router:end -->';
@@ -114,6 +115,21 @@ function loadState(home) {
   try { state = JSON.parse(original.bytes.toString('utf8')); }
   catch { throw new Error('Installer state is not valid JSON; it was not changed'); }
   if (state.version !== 1 || !state.agents || !state.skills || !state.instructions) throw new Error('Unsupported installer state; it was not changed');
+  if (state.nativeHooks !== undefined) {
+    if (!state.nativeHooks || typeof state.nativeHooks !== 'object' || Array.isArray(state.nativeHooks)) throw new Error('Invalid native hook metadata; no files were changed');
+    for (const [file, record] of Object.entries(state.nativeHooks)) {
+      if (!path.isAbsolute(file) || !record || record.adapterId !== 'claude-code'
+          || record.event !== 'UserPromptSubmit' || !record.hook || record.hook.type !== 'command'
+          || typeof record.hook.command !== 'string' || !record.hook.command
+          || typeof record.runtimePath !== 'string' || !path.isAbsolute(record.runtimePath)
+          || !/^[a-f0-9]{64}$/.test(record.runtimeHash || '')
+          || (record.originalHash !== null && !/^[a-f0-9]{64}$/.test(record.originalHash || ''))
+          || !/^[a-f0-9]{64}$/.test(record.installedHash || '')
+          || typeof record.createdEvent !== 'boolean' || typeof record.createdHooks !== 'boolean') {
+        throw new Error('Invalid native hook ownership metadata; no files were changed');
+      }
+    }
+  }
   for (const owned of Object.values(state.skills)) {
     if (!owned.files || typeof owned.files !== 'object') throw new Error('Invalid owned-file metadata; no files were changed');
     for (const relative of Object.keys(owned.files)) {
@@ -257,10 +273,10 @@ function commit(operations, stateDirectory, options) {
   try {
     for (const operation of operations) {
       assertSnapshot(operation);
-      if (operation.kind === 'instruction' && operation.before !== null) {
+      if ((operation.kind === 'instruction' || operation.kind === 'settings') && operation.before !== null) {
         const backup = path.join(stateDirectory, 'backups', `${hash(Buffer.from(operation.file)).slice(0, 12)}-${hash(operation.before)}.bak`);
         if (exists(backup)) {
-          if (!fs.readFileSync(backup).equals(operation.before)) throw new Error('An instruction backup conflicts with its content hash');
+          if (!fs.readFileSync(backup).equals(operation.before)) throw new Error('A configuration backup conflicts with its content hash');
         } else atomicWrite(backup, operation.before, 0o600, made, null);
         backups.push(backup);
       }
@@ -375,6 +391,69 @@ function plan(options, removing) {
     if (change.record) state.instructions[file] = change.record;
     else delete state.instructions[file];
   }
+  // Claude's native hook runs before the model, unlike an advisory CLAUDE.md
+  // instruction. Merge only our owned command and retain every user setting.
+  const claudeTarget = targets.find(target => target.id === 'claude-code');
+  if (claudeTarget) {
+    const priorHooks = previous.nativeHooks || {};
+    const desiredHooks = new Map();
+    const result = results.find(item => item.id === 'claude-code');
+    if (!removing) {
+      const directory = state.agents['claude-code'].skillPath;
+      const runtimePath = path.join(directory, CLAUDE_HOOK_RUNTIME);
+      const source = payload.get(CLAUDE_HOOK_RUNTIME)?.bytes;
+      const settingsFile = actualPath(path.join(path.dirname(claudeTarget.instructionPath), 'settings.json'));
+      const planned = plannedSkills.has(directory);
+      let ready = Boolean(source && planned);
+      if (source && !planned) {
+        try { ready = actualPath(runtimePath) === runtimePath && snapshot(runtimePath).bytes?.equals(source) === true; }
+        catch { ready = false; }
+      }
+      if (ready) {
+        desiredHooks.set(settingsFile, { hook: claudeHook(directory), runtimePath, runtimeHash: hash(source) });
+        result.nativeHookStatus = 'configured';
+        result.nativeHookPath = settingsFile;
+        result.notes = [...result.notes, 'Installs a native UserPromptSubmit hook for read-only provider discovery and routing context.'];
+      } else {
+        const prior = priorHooks[settingsFile];
+        if (prior && !planned && actualPath(runtimePath) === runtimePath && snapshot(runtimePath).bytes !== null
+            && hash(snapshot(runtimePath).bytes) === prior.runtimeHash) {
+          desiredHooks.set(settingsFile, { hook: prior.hook, runtimePath, runtimeHash: prior.runtimeHash });
+          result.nativeHookStatus = 'retained-manual-runtime';
+          result.nativeHookPath = settingsFile;
+        } else if (prior && !planned) {
+          throw new Error('The manual Claude activation runtime was changed or removed; preserving its settings');
+        } else result.nativeHookStatus = 'runtime-unavailable';
+        result.notes = [...result.notes, 'Native Claude hook needs the current activation runtime in a reused manual skill; existing manual contents were preserved.'];
+      }
+    }
+    const records = { ...(state.nativeHooks || {}) };
+    for (const file of new Set([...Object.keys(priorHooks), ...desiredHooks.keys()])) {
+      const prior = priorHooks[file];
+      const desired = desiredHooks.get(file);
+      const before = snapshot(file);
+      let originalBytes = null;
+      if (prior?.originalHash) {
+        const backup = path.join(path.dirname(loaded.file), 'backups', `${hash(Buffer.from(file)).slice(0, 12)}-${prior.originalHash}.bak`);
+        if (exists(backup)) {
+          const stored = snapshot(backup).bytes;
+          if (hash(stored) !== prior.originalHash) throw new Error('The original Claude settings backup changed; preserving settings');
+          originalBytes = stored;
+        }
+      }
+      const change = changeClaudeHook(before.bytes, desired?.hook || null, prior, originalBytes);
+      if (desired && change.disabled) {
+        result.nativeHookStatus = 'configured-disabled';
+        result.notes.push('Existing disableAllHooks=true is retained; Claude will not run the native hook while that setting applies.');
+      }
+      addOperation(operations, file, change.after, 'settings', before.mode);
+      if (change.record) records[file] = { ...change.record, adapterId: 'claude-code', event: 'UserPromptSubmit',
+        runtimePath: desired.runtimePath, runtimeHash: desired.runtimeHash };
+      else delete records[file];
+    }
+    if (Object.keys(records).length) state.nativeHooks = records;
+    else delete state.nativeHooks;
+  }
   const preservedFiles = [];
   if (removing) {
     const referenced = new Set(Object.values(state.agents).map(entry => entry.skillPath));
@@ -389,7 +468,8 @@ function plan(options, removing) {
       delete state.skills[directory];
     }
   }
-  const empty = !Object.keys(state.agents).length && !Object.keys(state.skills).length && !Object.keys(state.instructions).length;
+  const empty = !Object.keys(state.agents).length && !Object.keys(state.skills).length && !Object.keys(state.instructions).length
+    && !Object.keys(state.nativeHooks || {}).length;
   addOperation(operations, loaded.file, empty ? null : Buffer.from(JSON.stringify(state, null, 2) + '\n'), 'state', 0o600);
   const changes = [...operations.values()];
   const backups = options.dryRun ? [] : commit(changes, path.dirname(loaded.file), options);
